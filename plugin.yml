@@ -1,0 +1,40 @@
+name: Apocalypse
+main: org.imaginecraft.apocalypse.Apocalypse
+version: 0.0.5
+author: sirrus86
+
+commands:
+    apocalypse:
+        description: ...
+        aliases: [apoc]
+        usage: /apoc
+
+permissions:
+    apocalypse.admin:
+        description: Gives user complete control of the Apocalypse plugin.
+        default: op
+        children:
+            apocalypse.setoption: true
+            apocalypse.settown: true
+            apocalypse.setworld: true
+    apocalypse.join:
+        description: Allows user to join an Apocalypse event.
+        default: true
+    apocalypse.leave:
+        description: Allows user to leave an Apocalypse event.
+        default: true
+    apocalypse.setoption:
+        description: Allows user to view and modify plugin configuration options.
+        default: false
+    apocalypse.settown:
+        description: Allows user to set a given team's town location.
+        default: false
+    apocalypse.setworld:
+        description: Allows user to set the Apocalypse event's world.
+        default: false
+    apocalypse.start:
+        description: Allows user to start the Apocalypse event.
+        default: false
+    apocalypse.testboss:
+        description: Allows user to spawn in and test bosses.
+        default: false
