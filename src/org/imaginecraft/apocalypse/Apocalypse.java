@@ -42,6 +42,9 @@ public class Apocalypse extends JavaPlugin {
 		return config;
 	}
 	
+	/**
+	 * Returns the jar file used by the Apocalypse plugin.
+	 */
 	public File getJarFile() {
 		return this.getFile();
 	}
