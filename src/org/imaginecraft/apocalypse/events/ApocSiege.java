@@ -18,10 +18,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import org.imaginecraft.apocalypse.Apocalypse;
 import org.imaginecraft.apocalypse.config.ConfigOption;
 import org.imaginecraft.apocalypse.teams.ApocTeam;
+import org.imaginecraft.apocalypse.tools.ApocTools;
 
 public class ApocSiege implements ConfigurationSerializable, Listener {
 	
@@ -34,7 +36,6 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	private int husks = 0, strays = 0, witherSkellies = 0;
 	
 	private String name;
-	private ApocTeam target = null;
 	
 	public ApocSiege(String name) {
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -58,10 +59,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	}
 	
 	public void setMobs(String type, int amount) {
-		if (EntityType.valueOf(type.toUpperCase()) != null) {
-			mobs.put(EntityType.valueOf(type.toUpperCase()), amount);
-		}
-		else if (type.equalsIgnoreCase("husk")) {
+		if (type.equalsIgnoreCase("husk")) {
 			husks = amount;
 		}
 		else if (type.equalsIgnoreCase("stray")) {
@@ -70,6 +68,41 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 		else if (type.equalsIgnoreCase("wither_skeleton")) {
 			witherSkellies = amount;
 		}
+		else {
+			EntityType eType = EntityType.valueOf(type.toUpperCase());
+			mobs.put(eType, amount);
+		}
+	}
+	
+	public void spawn(ApocTeam team) {
+		List<String> mobList = new ArrayList<String>();
+		for (EntityType type : mobs.keySet()) {
+			for (int i = 0; i < mobs.get(type); i ++) {
+				mobList.add(type.toString());
+			}
+		}
+		for (int i = 0; i < husks; i ++) {
+			mobList.add("HUSK");
+		}
+		for (int i = 0; i < strays; i ++) {
+			mobList.add("STRAY");
+		}
+		for (int i = 0; i < witherSkellies; i ++) {
+			mobList.add("WITHER_SKELETON");
+		}
+		new BukkitRunnable() {
+			int i = 0;
+			@Override
+			public void run() {
+				if (i < mobList.size()) {
+					spawned.add(ApocTools.spawnMob(mobList.get(i), ApocTools.findSpawnLocation(team)));
+					i ++;
+				}
+				else {
+					this.cancel();
+				}
+			}
+		}.runTaskTimer(plugin, 0L, ApocTools.getTicks(ConfigOption.SIEGES_SPAWN_INTERVAL));
 	}
 	
 	@EventHandler

@@ -1,7 +1,8 @@
 name: Apocalypse
 main: org.imaginecraft.apocalypse.Apocalypse
-version: 0.0.5
+version: 0.1.0
 author: sirrus86
+depend: [ProtocolLib]
 
 commands:
     apocalypse:

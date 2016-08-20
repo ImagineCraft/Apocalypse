@@ -100,6 +100,12 @@ public class ConfigOption {
 	@ConfigDesc(path = "sieges.load-preloaded-sieges", desc = "Whether preloaded sieges should be added along with specified ones.")
 	public static boolean SIEGES_LOAD_PRELOADED_SIEGES = ApocConfig.config.getBoolean("sieges.load-preloaded-sieges", true);
 
+	@ConfigDesc(path = "sieges.spawn-attempts", desc = "Maximum number of attempts that should be made to find a random spawn point for siege mobs.")
+	public static int SIEGES_SPAWN_ATTEMPTS = ApocConfig.config.getInt("sieges.spawn-attempts", 10);
+
+	@ConfigDesc(path = "sieges.spawn-distance", desc = "Maximum distance mobs should spawn from target team's town.")
+	public static double SIEGES_SPAWN_DISTANCE = ApocConfig.config.getDouble("sieges.spawn-distance", 50.0D);
+
 	@ConfigDesc(path = "sieges.spawn-interval", desc = "Amount of time to wait between each mob being spawned in a siege.")
 	public static long SIEGES_SPAWN_INTERVAL = ApocConfig.config.getLong("sieges.spawn-interval", 500L);
 
