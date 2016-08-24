@@ -4,8 +4,8 @@ import org.imaginecraft.apocalypse.config.ConfigDesc;
 
 public class ConfigOption {
 
-	@ConfigDesc(path = "event.credit-spawned-mobs-only", desc = "Whether players should only score points for monsters spawned in sieges.")
-	public static boolean EVENT_CREDIT_SPAWNED_MOBS_ONLY = ApocConfig.config.getBoolean("event.credit-spawned-mobs-only", true);
+//	@ConfigDesc(path = "event.credit-spawned-mobs-only", desc = "Whether players should only score points for monsters spawned in sieges.")
+//	public static boolean EVENT_CREDIT_SPAWNED_MOBS_ONLY = ApocConfig.config.getBoolean("event.credit-spawned-mobs-only", true);
 
 	@ConfigDesc(path = "event.duration", desc = "How long in milliseconds the event should last.")
 	public static long EVENT_DURATION = ApocConfig.config.getLong("event.duration", 1209600000L);
@@ -99,9 +99,6 @@ public class ConfigOption {
 
 	@ConfigDesc(path = "sieges.load-preloaded-sieges", desc = "Whether preloaded sieges should be added along with specified ones.")
 	public static boolean SIEGES_LOAD_PRELOADED_SIEGES = ApocConfig.config.getBoolean("sieges.load-preloaded-sieges", true);
-
-	@ConfigDesc(path = "sieges.spawn-attempts", desc = "Maximum number of attempts that should be made to find a random spawn point for siege mobs.")
-	public static int SIEGES_SPAWN_ATTEMPTS = ApocConfig.config.getInt("sieges.spawn-attempts", 10);
 
 	@ConfigDesc(path = "sieges.spawn-distance", desc = "Maximum distance mobs should spawn from target team's town.")
 	public static double SIEGES_SPAWN_DISTANCE = ApocConfig.config.getDouble("sieges.spawn-distance", 50.0D);

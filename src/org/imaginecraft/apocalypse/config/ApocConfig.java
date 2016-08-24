@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import org.imaginecraft.apocalypse.Apocalypse;
@@ -45,6 +46,9 @@ public class ApocConfig {
 	private ApocEvent event;
 	
 	public ApocConfig() {
+		ConfigurationSerialization.registerClass(ApocBoss.class, "ApocBoss");
+		ConfigurationSerialization.registerClass(ApocSiege.class, "ApocSiege");
+		ConfigurationSerialization.registerClass(ApocTeam.class, "ApocTeam");
 		event = new ApocEvent();
 	}
 	
@@ -180,6 +184,10 @@ public class ApocConfig {
 	 */
 	public Map<String, String> getOptions() {
 		return options;
+	}
+	
+	public Set<ApocSiege> getSieges() {
+		return sieges;
 	}
 	
 	/**

@@ -18,6 +18,8 @@ permissions:
             apocalypse.setoption: true
             apocalypse.settown: true
             apocalypse.setworld: true
+            apocalypse.testboss: true
+            apocalypse.testsiege: true
     apocalypse.join:
         description: Allows user to join an Apocalypse event.
         default: true
@@ -38,4 +40,7 @@ permissions:
         default: false
     apocalypse.testboss:
         description: Allows user to spawn in and test bosses.
+        default: false
+    apocalypse.testsiege:
+        description: Allows user to spawn in and test sieges.
         default: false

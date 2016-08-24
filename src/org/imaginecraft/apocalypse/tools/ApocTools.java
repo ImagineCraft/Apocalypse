@@ -25,14 +25,15 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Creature;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Skeleton;
 import org.bukkit.entity.Skeleton.SkeletonType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+
 import org.imaginecraft.apocalypse.Apocalypse;
 import org.imaginecraft.apocalypse.config.ConfigOption;
 import org.imaginecraft.apocalypse.nms.NMSLib;
@@ -63,8 +64,7 @@ public class ApocTools {
 	private final static int MILLISECONDS_PER_HOUR = MILLISECONDS_PER_MINUTE * 60;
 	private final static int MILLISECONDS_PER_DAY = MILLISECONDS_PER_HOUR * 24;
 
-	private final static Class<?> cusPathfinderGoalWalkToLocation = resolveClass(CUSTOM_PREFIX + "PathfinderGoalWalkToLocation"),
-			nmsEntityBlaze = resolveClass(NMS_PREFIX + "EntityBlaze"),
+	private final static Class<?> nmsEntityBlaze = resolveClass(NMS_PREFIX + "EntityBlaze"),
 			nmsEntityCreature = resolveClass(NMS_PREFIX + "EntityCreature"),
 			nmsEntityHuman = resolveClass(NMS_PREFIX + "EntityHuman"),
 			nmsEntityInsentient = resolveClass(NMS_PREFIX + "EntityInsentient"),
@@ -232,7 +232,7 @@ public class ApocTools {
 		}
 	}
 	
-	public static Location findSpawnLocation(ApocTeam team) {
+	public static Location findCenterLocation(ApocTeam team, World world) {
 		Location loc = team.getTown();
 		if (loc == null) {
 			Location loc1 = team.getSpawn(), loc2 = team.getSpawn();
@@ -240,8 +240,8 @@ public class ApocTools {
 				for (OfflinePlayer player2 : team.getPlayers()) {
 					if (player1.isOnline() && player2.isOnline()) {
 						Location loc3 = ((Player)player1).getLocation(), loc4 = ((Player)player2).getLocation();
-						if (loc3.getWorld() == plugin.getApocConfig().getEvent().getWorld()
-								&& loc4.getWorld() == plugin.getApocConfig().getEvent().getWorld()) {
+						if (loc3.getWorld() == world
+								&& loc4.getWorld() == world) {
 							loc3.setY(0.0D);
 							loc4.setY(0.0D);
 							if (loc3.distanceSquared(loc4) > loc1.distanceSquared(loc2)) {
@@ -252,23 +252,15 @@ public class ApocTools {
 					}
 				}
 			}
-			loc = loc1.toVector().midpoint(loc2.toVector()).toLocation(plugin.getApocConfig().getEvent().getWorld());
+			loc = loc1.toVector().midpoint(loc2.toVector()).toLocation(world);
 		}
-		for (int i = 0; i < ConfigOption.SIEGES_SPAWN_ATTEMPTS; i ++) {
-			double x = (random.nextDouble() * ((loc.getX() + ConfigOption.SIEGES_SPAWN_DISTANCE) - (loc.getX() - ConfigOption.SIEGES_SPAWN_DISTANCE))) + loc.getX() - ConfigOption.SIEGES_SPAWN_DISTANCE;
-			double z = (random.nextDouble() * ((loc.getZ() + ConfigOption.SIEGES_SPAWN_DISTANCE) - (loc.getZ() - ConfigOption.SIEGES_SPAWN_DISTANCE))) + loc.getZ() - ConfigOption.SIEGES_SPAWN_DISTANCE;
-			Location test = new Location(loc.getWorld(), x, 255, z);
-			for (int j = 256; j > 0; j --) {
-				test.setY(j);
-				if (test.getBlock().getRelative(BlockFace.DOWN).getType().isOccluding()
-						&& test.getBlock().getType() == Material.AIR
-						&& test.getBlock().getRelative(BlockFace.UP).getType() == Material.AIR
-						&& test.getBlock().getRelative(BlockFace.UP, 2).getType() == Material.AIR) {
-					return test;
-				}
-			}
-		}
-		return null;
+		return loc;
+	}
+	
+	public static Location findSpawnLocation(Location loc) {
+		int x = (int) ((random.nextDouble() * ((loc.getX() + ConfigOption.SIEGES_SPAWN_DISTANCE) - (loc.getX() - ConfigOption.SIEGES_SPAWN_DISTANCE))) + loc.getX() - ConfigOption.SIEGES_SPAWN_DISTANCE);
+		int z = (int) ((random.nextDouble() * ((loc.getZ() + ConfigOption.SIEGES_SPAWN_DISTANCE) - (loc.getZ() - ConfigOption.SIEGES_SPAWN_DISTANCE))) + loc.getZ() - ConfigOption.SIEGES_SPAWN_DISTANCE);
+		return loc.getWorld().getHighestBlockAt(x, z).getLocation();
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -379,7 +371,7 @@ public class ApocTools {
 	 * <p>
 	 * Will fail if distance is too great or entity and location are in different worlds.
 	 */
-	public static void setAggressive(Creature entity, Location loc) {
+	public static void setAggressive(LivingEntity entity) {
 		if (ConfigOption.PLUGIN_USE_REFLECTION
 				|| nms == null) {
 			try {
@@ -399,8 +391,8 @@ public class ApocTools {
 				Method targetMethod = targetSelector.getClass().getMethod("a", int.class, nmsPathfinderGoal);
 				goalMethod.invoke(goalSelector, 0, nmsPathfinderGoalFloat.getConstructor(nmsEntityInsentient)
 						.newInstance(nmsEntity));
-				goalMethod.invoke(goalSelector, 5, cusPathfinderGoalWalkToLocation.getConstructor(nmsEntityInsentient, Location.class, double.class)
-						.newInstance(nmsEntity, loc, 1.0D));
+//				goalMethod.invoke(goalSelector, 5, cusPathfinderGoalWalkToLocation.getConstructor(nmsEntityInsentient, Location.class, double.class)
+//						.newInstance(nmsEntity, loc, 1.0D));
 				goalMethod.invoke(goalSelector, 7, nmsPathfinderGoalRandomStroll.getConstructor(nmsEntityCreature, double.class)
 						.newInstance(nmsEntity, 1.0D));
 				goalMethod.invoke(goalSelector, 8, nmsPathfinderGoalLookAtPlayer.getConstructor(nmsEntityInsentient, Class.class, float.class)
@@ -438,12 +430,22 @@ public class ApocTools {
 			}
 		}
 		else {
-			nms.setAggressive(entity, loc);
+			nms.setAggressive(entity);
 		}
 	}
 	
-	public static Creature spawnMob(String type, Location loc) {
-		Creature entity = null;
+	public static void setDestination(LivingEntity entity, Location loc) {
+		if (ConfigOption.PLUGIN_USE_REFLECTION
+				|| nms == null) {
+			// TODO
+		}
+		else {
+			nms.setDestination(entity, loc);
+		}
+	}
+	
+	public static LivingEntity spawnMob(String type, Location loc) {
+		LivingEntity entity = null;
 		EntityType eType = null;
 		if (type.equalsIgnoreCase("husk")) eType = EntityType.ZOMBIE;
 		else if (type.equalsIgnoreCase("stray")
@@ -462,13 +464,13 @@ public class ApocTools {
 			List<Block> frame = new ArrayList<Block>(),
 					portal = new ArrayList<Block>();
 			for (int x = minX; x <= maxX; x ++) {
-				for (int y = 0; y <= height; y ++) {
+				for (int y = -1; y <= height; y ++) {
 					for (int z = minZ; z <= maxZ; z ++) {
 						if ((x == minX && minX != 0)
 								|| (x == maxX && maxX != 0)
 								|| (z == minZ && minZ != 0)
 								|| (z == maxZ && maxZ != 0)
-								|| y == 0
+								|| y == -1
 								|| y == height) {
 							frame.add(loc.getBlock().getRelative(x, y, z));
 						}
@@ -480,16 +482,13 @@ public class ApocTools {
 			}
 			ApocTools.blockDisguise(frame, Material.OBSIDIAN);
 			ApocTools.blockDisguise(portal, Material.PORTAL, dir == BlockFace.NORTH ? 0 : 2);
-			entity = (Creature) loc.getWorld().spawnEntity(loc, eType);
+			entity = (LivingEntity) loc.getWorld().spawnEntity(loc, eType);
 			if (type.equalsIgnoreCase("wither_skeleton")) ((Skeleton) entity).setSkeletonType(SkeletonType.WITHER);
 			new BukkitRunnable() {
 				@Override
 				public void run() {
 					for (Block block : frame) {
 						block.getWorld().playEffect(block.getLocation(), Effect.STEP_SOUND, Material.OBSIDIAN);
-					}
-					for (Block block : portal) {
-						block.getWorld().playEffect(block.getLocation(), Effect.STEP_SOUND, Material.PORTAL);
 					}
 					ApocTools.blockUpdate(frame);
 					ApocTools.blockUpdate(portal);

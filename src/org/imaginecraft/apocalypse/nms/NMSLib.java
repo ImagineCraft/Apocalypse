@@ -1,11 +1,13 @@
 package org.imaginecraft.apocalypse.nms;
 
 import org.bukkit.Location;
-import org.bukkit.entity.Creature;
+import org.bukkit.entity.LivingEntity;
 
 public interface NMSLib {
 
-	public void setAggressive(Creature entity, Location loc);
+	public void setAggressive(LivingEntity entity);
+	
+	public void setDestination(LivingEntity entity, Location loc);
 	
 	public default Class<?> getPrivateClass(String className, Class<?> clazz) {
 		// TODO

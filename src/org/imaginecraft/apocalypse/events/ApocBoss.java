@@ -5,16 +5,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarFlag;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.entity.Creature;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.PigZombie;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Skeleton;
@@ -47,7 +46,7 @@ public class ApocBoss implements ConfigurationSerializable, Listener {
 
 	private boolean isBaby = false;
 	private BossBar bossBar;
-	private Creature entity;
+	private LivingEntity entity;
 	private double health = 0.0D;
 	private String name;
 	private int points = 0, xp = 0;
@@ -111,18 +110,18 @@ public class ApocBoss implements ConfigurationSerializable, Listener {
 		zType = type;
 	}
 	
-	public void spawn(ApocTeam team, Location spawn, Location objective) {
+	public void spawn(ApocTeam team, World world) {
 		this.team = team;
-		bossBar = plugin.getServer().createBossBar(name, BarColor.RED, BarStyle.SOLID, BarFlag.CREATE_FOG, BarFlag.DARKEN_SKY, BarFlag.PLAY_BOSS_MUSIC);
-		for (Player player : spawn.getWorld().getPlayers()) {
+		entity = ApocTools.spawnMob(type.toString(), ApocTools.findCenterLocation(team, world));
+		bossBar = plugin.getServer().createBossBar(name, BarColor.PURPLE, BarStyle.SOLID);
+		for (Player player : entity.getWorld().getPlayers()) {
 			if (team.hasPlayer(player.getUniqueId())) {
 				bossBar.addPlayer(player);
 			}
 		}
 		bossBar.setVisible(true);
-		entity = (Creature) spawn.getWorld().spawnEntity(spawn, type);
 		entity.setGlowing(true);
-		entity.setCustomName(ChatColor.RED + name);
+		entity.setCustomName(ChatColor.LIGHT_PURPLE + name);
 		entity.setCustomNameVisible(true);
 		entity.setRemoveWhenFarAway(false);
 		if (entity instanceof PigZombie) {
@@ -152,7 +151,7 @@ public class ApocBoss implements ConfigurationSerializable, Listener {
 				case OFF_HAND: entity.getEquipment().setItemInOffHand(equipment.get(slot)); break;
 			}
 		}
-		ApocTools.setAggressive(entity, objective);
+		ApocTools.setAggressive(entity);
 	}
 	
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)

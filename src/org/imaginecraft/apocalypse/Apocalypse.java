@@ -2,12 +2,10 @@ package org.imaginecraft.apocalypse;
 
 import java.io.File;
 
-import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import org.imaginecraft.apocalypse.commands.ApocComExec;
 import org.imaginecraft.apocalypse.config.ApocConfig;
-import org.imaginecraft.apocalypse.events.ApocBoss;
 import org.imaginecraft.apocalypse.listeners.ApocListener;
 import org.imaginecraft.apocalypse.tools.ApocTools;
 
@@ -21,7 +19,6 @@ public class Apocalypse extends JavaPlugin {
 	
 	@Override
 	public void onEnable() {
-		ConfigurationSerialization.registerClass(ApocBoss.class, "ApocBoss");
 		if (!getDataFolder().exists()) getDataFolder().mkdirs();
 		config = new ApocConfig();
 		new ApocTools();

@@ -13,6 +13,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Team;
+
 import org.imaginecraft.apocalypse.Apocalypse;
 import org.imaginecraft.apocalypse.events.ApocEvent;
 
@@ -30,10 +31,9 @@ public class ApocTeam implements ConfigurationSerializable {
 	private final String name;
 	
 	public ApocTeam(ChatColor color, String name) {
-		this.color = color;
 		this.name = name;
 		team = event.getScoreboard().registerNewTeam(name);
-		team.setPrefix(color.toString());
+		setColor(color);
 	}
 	
 	public void addPlayer(UUID uuid) {

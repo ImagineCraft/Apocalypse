@@ -4,8 +4,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -18,6 +16,7 @@ import org.imaginecraft.apocalypse.config.ApocConfig;
 import org.imaginecraft.apocalypse.config.ConfigOption;
 import org.imaginecraft.apocalypse.events.ApocBoss;
 import org.imaginecraft.apocalypse.events.ApocEvent;
+import org.imaginecraft.apocalypse.events.ApocSiege;
 import org.imaginecraft.apocalypse.teams.ApocTeam;
 
 import com.google.common.collect.Lists;
@@ -224,10 +223,9 @@ public class ApocComExec implements CommandExecutor {
 							if (boss != null) {
 								ApocTeam team = ApocTeam.getTeam("Test");
 								if (team == null) team = new ApocTeam(ChatColor.GRAY, "Test");
+								team.setSpawn(player.getLocation());
 								team.addPlayer(player.getUniqueId());
-								Location loc = new Location(player.getWorld(), -1860.0D, 67.0D, -450.0D);
-								boss.spawn(team, player.getLocation(), loc);
-								loc.getBlock().setType(Material.LAPIS_BLOCK);
+								boss.spawn(team, player.getWorld());
 							}
 							else {
 								sender.sendMessage(ChatColor.RED + "Unknown boss: " + bossName + ".");
@@ -239,6 +237,40 @@ public class ApocComExec implements CommandExecutor {
 					}
 					else {
 						sender.sendMessage(ChatColor.RED + "You don't have permission to spawn bosses.");
+					}
+				}
+				else {
+					sender.sendMessage(ChatColor.RED + "This command is only accessible to players.");
+				}
+			}
+			else if (args[0].equalsIgnoreCase("testsiege")) {
+				if (sender instanceof Player) {
+					if (sender.hasPermission("apocalypse.testsiege")) {
+						if (args.length > 1) {
+							String siegeName = "";
+							for (int i = 1; i < args.length; i ++) {
+								if (siegeName == "") siegeName = args[i];
+								else siegeName = siegeName + " " + args[i];
+							}
+							Player player = (Player) sender;
+							ApocSiege siege = ApocSiege.getSiege(siegeName);
+							if (siege != null) {
+								ApocTeam team = ApocTeam.getTeam("Test");
+								if (team == null) team = new ApocTeam(ChatColor.GRAY, "Test");
+								team.setSpawn(player.getLocation());
+								team.addPlayer(player.getUniqueId());
+								siege.spawn(team, player.getWorld());
+							}
+							else {
+								sender.sendMessage(ChatColor.RED + "Unknown siege: " + siegeName + ".");
+							}
+						}
+						else {
+							// TODO
+						}
+					}
+					else {
+						sender.sendMessage(ChatColor.RED + "You don't have permission to spawn sieges.");
 					}
 				}
 				else {
