@@ -1,5 +1,7 @@
 package org.imaginecraft.apocalypse.config;
 
+import java.lang.reflect.Field;
+
 import org.imaginecraft.apocalypse.config.ConfigDesc;
 
 public class ConfigOption {
@@ -114,5 +116,14 @@ public class ConfigOption {
 	
 	@ConfigDesc(path = "teams.minimum-spawning-distance", desc = "Minimum distance teams can spawn from each other when event starts.")
 	public static double TEAMS_MINIMUM_SPAWNING_DISTANCE = ApocConfig.config.getDouble("teams.minimum-spawning-distance", 1000.0D);
+	
+	public static int intValue(String name) {
+		try {
+			Field field = ConfigOption.class.getField(name);
+			return field.getInt(field);
+		} catch (Exception e) {
+			return 0;
+		}
+	}
 	
 }

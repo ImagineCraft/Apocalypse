@@ -26,6 +26,8 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Skeleton;
+import org.bukkit.entity.Skeleton.SkeletonType;
+import org.bukkit.entity.Villager;
 import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -38,21 +40,18 @@ import org.imaginecraft.apocalypse.config.ConfigOption;
 import org.imaginecraft.apocalypse.teams.ApocTeam;
 import org.imaginecraft.apocalypse.tools.ApocTools;
 
-import com.google.common.collect.Lists;
-
 public class ApocSiege implements ConfigurationSerializable, Listener {
 	
 	private static Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
 
 	private Map<Block, Biome> biomes = new HashMap<Block, Biome>();
 	private Map<EntityType, Integer> mobs = new EnumMap<EntityType, Integer>(EntityType.class);
-	private Set<LivingEntity> spawned = new HashSet<LivingEntity>();
+	private Map<LivingEntity, Integer> spawned = new HashMap<LivingEntity, Integer>();
 	private Set<ApocBoss> bosses = new HashSet<ApocBoss>();
 	private BossBar bar;
 	private Biome biome;
 	private Location dest;
-	private int husks = 0, strays = 0, witherSkellies = 0,
-			spawnCount = 0;
+	private int husks = 0, strays = 0, witherSkellies = 0;
 	private boolean storm = false, thunder = false;
 	private ApocTeam team;
 	
@@ -67,15 +66,14 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 		@Override
 		public void run() {
 			if (!spawned.isEmpty()) {
-				for (LivingEntity entity : spawned) {
-					if (!(entity instanceof Creature)
-							|| ((Creature)entity).getTarget() == null) {
+				for (LivingEntity entity : spawned.keySet()) {
+					if (entity != null
+							&& !entity.isDead()
+							&& entity instanceof Creature
+							&& ((Creature)entity).getTarget() == null) {
 						ApocTools.setDestination(entity, dest);
 					}
 				}
-			}
-			else {
-				this.cancel();
 			}
 		}
 	};
@@ -100,8 +98,36 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 		return name;
 	}
 	
+	private int getPointValue(LivingEntity entity) {
+		if (entity.getType() == EntityType.SKELETON) {
+			if (((Skeleton)entity).getSkeletonType() == SkeletonType.STRAY) {
+				return ConfigOption.PLAYERS_POINTS_PER_KILL_STRAY;
+			}
+			else if (((Skeleton)entity).getSkeletonType() == SkeletonType.WITHER) {
+				return ConfigOption.PLAYERS_POINTS_PER_KILL_WITHER_SKELETON;
+			}
+			else return ConfigOption.PLAYERS_POINTS_PER_KILL_SKELETON;
+		}
+		else if (entity.getType() == EntityType.ZOMBIE) {
+			if (((Zombie)entity).getVillagerProfession() == Villager.Profession.HUSK) {
+				return ConfigOption.PLAYERS_POINTS_PER_KILL_HUSK;
+			}
+			else return ConfigOption.PLAYERS_POINTS_PER_KILL_ZOMBIE;
+		}
+		else {
+			return ConfigOption.intValue("PLAYERS_POINTS_PER_KILL_" + entity.getType().toString());
+		}
+	}
+	
 	private double getProgress() {
-		return (double) spawned.size() / (double) spawnCount;
+		int i = spawned.size();
+		for (LivingEntity entity : spawned.keySet()) {
+			if (entity == null
+					|| entity.isDead()) {
+				i --;
+			}
+		}
+		return (double) i / (double) spawned.size();
 	}
 
 	public static ApocSiege getSiege(String siegeName) {
@@ -112,7 +138,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	}
 	
 	public void purge() {
-		for (LivingEntity entity : spawned) {
+		for (LivingEntity entity : spawned.keySet()) {
 			entity.damage(Double.MAX_VALUE);
 		}
 	}
@@ -159,21 +185,22 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	
 	public void spawn(ApocTeam team, World world) {
 		this.team = team;
-		List<String> mobList = new ArrayList<String>();
+		List<Object> spawnList = new ArrayList<Object>();
 		for (EntityType type : mobs.keySet()) {
 			for (int i = 0; i < mobs.get(type); i ++) {
-				mobList.add(type.toString());
+				spawnList.add(type);
 			}
 		}
 		for (int i = 0; i < husks; i ++) {
-			mobList.add("HUSK");
+			spawnList.add("HUSK");
 		}
 		for (int i = 0; i < strays; i ++) {
-			mobList.add("STRAY");
+			spawnList.add("STRAY");
 		}
 		for (int i = 0; i < witherSkellies; i ++) {
-			mobList.add("WITHER_SKELETON");
+			spawnList.add("WITHER_SKELETON");
 		}
+		spawnList.addAll(bosses);
 		bar = plugin.getServer().createBossBar(name, BarColor.RED, getBarStyle());
 		bar.setProgress(1.0D);
 		for (OfflinePlayer player : team.getPlayers()) {
@@ -182,6 +209,41 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 			}
 		}
 		dest = ApocTools.findCenterLocation(team, world);
+		spawnMobs(spawnList);
+		updateBiome();
+		dest.getWorld().setStorm(storm);
+		dest.getWorld().setThundering(thunder);
+		setDestination.runTaskTimer(plugin, ApocTools.getTicks(ConfigOption.SIEGES_SPAWN_INTERVAL), 20L);
+	}
+	
+	private void spawnMobs(List<Object> spawnList) {
+		for (int i = 0; i < spawnList.size(); i ++) {
+			Object spawn = spawnList.get(i);
+			new BukkitRunnable() {
+				@Override
+				public void run() {
+					LivingEntity entity = null;
+					if (spawn instanceof ApocBoss) {
+						entity = ((ApocBoss)spawn).spawn(team, dest.getWorld());
+						spawned.put(entity, ((ApocBoss)spawn).getPoints());
+					}
+					else {
+						entity = ApocTools.spawnMob(spawn.toString(), ApocTools.findSpawnLocation(dest));
+						spawned.put(entity, getPointValue(entity));
+					}
+					if (entity != null) {
+						entity.setGlowing(true);
+						entity.setRemoveWhenFarAway(false);
+						ApocTools.setAggressive(entity);
+						ApocTools.setDestination(entity, dest);
+						bar.setStyle(getBarStyle());
+					}
+				}
+			}.runTaskLater(plugin, ApocTools.getTicks(ConfigOption.SIEGES_SPAWN_INTERVAL) * i);
+		}
+	}
+	
+	private void updateBiome() {
 		if (biome != null) {
 			Set<Chunk> chunks = new HashSet<Chunk>();
 			for (int x = dest.getBlockX() - (int)ConfigOption.SIEGES_SPAWN_DISTANCE; x < dest.getBlockX() + ConfigOption.SIEGES_SPAWN_DISTANCE; x ++) {
@@ -198,83 +260,20 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 				ApocTools.updateChunk(chunk);
 			}
 		}
-		dest.getWorld().setStorm(storm);
-		dest.getWorld().setThundering(thunder);
-		List<ApocBoss> bossList = Lists.newArrayList(bosses);
-		new BukkitRunnable() {
-			int i = 0, j = 0;
-			@Override
-			public void run() {
-				if (i < mobList.size()) {
-					LivingEntity entity = ApocTools.spawnMob(mobList.get(i), ApocTools.findSpawnLocation(dest));
-					entity.setGlowing(true);
-					entity.setRemoveWhenFarAway(false);
-					ApocTools.setAggressive(entity);
-					ApocTools.setDestination(entity, dest);
-					spawned.add(entity);
-					spawnCount ++;
-					bar.setStyle(getBarStyle());
-					i ++;
-				}
-				else if (j < bossList.size()){
-					bossList.get(j).spawn(team, world);
-					j ++;
-				}
-				else {
-					this.cancel();
-				}
-			}
-		}.runTaskTimer(plugin, 0L, ApocTools.getTicks(ConfigOption.SIEGES_SPAWN_INTERVAL));
-		setDestination.runTaskTimer(plugin, ApocTools.getTicks(ConfigOption.SIEGES_SPAWN_INTERVAL), 20L);
 	}
 	
 	@SuppressWarnings("deprecation")
 	@EventHandler
 	public void onKill(EntityDeathEvent event) {
-		if (spawned.contains(event.getEntity())) {
+		if (spawned.containsKey(event.getEntity())) {
 			if (event.getEntity().getKiller() != null) {
 				Player killer = event.getEntity().getKiller();
-				int points = 0;
-				if (event.getEntity() instanceof Player) {
-					points = ConfigOption.PLAYERS_POINTS_PER_KILL_PLAYER;
-				}
-				else {
-					switch(event.getEntity().getType()) {
-						case BLAZE: points = ConfigOption.PLAYERS_POINTS_PER_KILL_BLAZE; break;
-						case CAVE_SPIDER: points = ConfigOption.PLAYERS_POINTS_PER_KILL_CAVE_SPIDER; break;
-						case CREEPER: points = ConfigOption.PLAYERS_POINTS_PER_KILL_CREEPER; break;
-						case ENDERMAN: points = ConfigOption.PLAYERS_POINTS_PER_KILL_ENDERMAN; break;
-						case ENDERMITE: points = ConfigOption.PLAYERS_POINTS_PER_KILL_ENDERMITE; break;
-						case MAGMA_CUBE: points = ConfigOption.PLAYERS_POINTS_PER_KILL_MAGMA_CUBE; break;
-						case PIG_ZOMBIE: points = ConfigOption.PLAYERS_POINTS_PER_KILL_PIG_ZOMBIE; break;
-						case POLAR_BEAR: points = ConfigOption.PLAYERS_POINTS_PER_KILL_POLAR_BEAR; break;
-						case SILVERFISH: points = ConfigOption.PLAYERS_POINTS_PER_KILL_SILVERFISH; break;
-						case SKELETON:
-							switch(((Skeleton)event.getEntity()).getSkeletonType()) {
-								case STRAY: points = ConfigOption.PLAYERS_POINTS_PER_KILL_STRAY; break;
-								case WITHER: points = ConfigOption.PLAYERS_POINTS_PER_KILL_WITHER_SKELETON; break;
-								default: points = ConfigOption.PLAYERS_POINTS_PER_KILL_SKELETON; break;
-							}
-							break;
-						case SLIME: points = ConfigOption.PLAYERS_POINTS_PER_KILL_SLIME; break;
-						case SNOWMAN: points = ConfigOption.PLAYERS_POINTS_PER_KILL_SNOWMAN; break;
-						case SPIDER: points = ConfigOption.PLAYERS_POINTS_PER_KILL_SPIDER; break;
-						case WITCH: points = ConfigOption.PLAYERS_POINTS_PER_KILL_WITCH; break;
-						case WOLF: points = ConfigOption.PLAYERS_POINTS_PER_KILL_WOLF; break;
-						case ZOMBIE:
-							switch(((Zombie)event.getEntity()).getVillagerProfession()) {
-								case HUSK: points = ConfigOption.PLAYERS_POINTS_PER_KILL_HUSK; break;
-								default: points = ConfigOption.PLAYERS_POINTS_PER_KILL_ZOMBIE; break;
-							}
-							break;
-						default: break;
-					}
-				}
+				int points = spawned.get(event.getEntity());
+				
 				if (ApocTeam.getPlayerTeam(killer) != null) {
 					ApocTeam.getPlayerTeam(killer).addScore(killer.getUniqueId(), points);
 				}
 			}
-			spawned.remove(event.getEntity());
 			if (getProgress() > 0.0D) {
 				bar.setProgress(getProgress());
 			}
@@ -284,7 +283,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 					if (oPlayer.isOnline()) {
 						Player player = (Player) oPlayer;
 						player.playSound(player.getEyeLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0F, 1.0F);
-						player.sendTitle(ChatColor.GREEN + this.name + " has been repelled!", null);
+						player.sendTitle(ChatColor.GREEN + "Siege has been repelled!", null);
 					}
 				}
 				Set<Chunk> chunks = new HashSet<Chunk>();

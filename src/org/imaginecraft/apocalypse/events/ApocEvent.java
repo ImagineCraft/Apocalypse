@@ -9,7 +9,6 @@ import java.util.Set;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -28,7 +27,6 @@ public class ApocEvent {
 	
 	private Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
 	
-	private Set<LivingEntity> spawned = new HashSet<LivingEntity>();
 	private Set<ApocTeam> teams = new HashSet<ApocTeam>();
 	
 	private final EnumSet<ChatColor> colors = EnumSet.of(ChatColor.AQUA, ChatColor.BLUE, ChatColor.DARK_AQUA, ChatColor.DARK_BLUE,
@@ -151,10 +149,6 @@ public class ApocEvent {
 	
 	public Scoreboard getScoreboard() {
 		return scoreboard;
-	}
-	
-	public Set<LivingEntity> getSpawned() {
-		return spawned;
 	}
 	
 	public Set<ApocTeam> getTeams() {

@@ -73,6 +73,10 @@ public class ApocBoss implements ConfigurationSerializable, Listener {
 		return name;
 	}
 	
+	public int getPoints() {
+		return points;
+	}
+	
 	public void setBaby(boolean baby) {
 		this.isBaby = baby;
 	}
@@ -117,10 +121,10 @@ public class ApocBoss implements ConfigurationSerializable, Listener {
 		zType = type;
 	}
 	
-	public void spawn(ApocTeam team, World world) {
+	public LivingEntity spawn(ApocTeam team, World world) {
 		this.team = team;
 		Location loc = ApocTools.findCenterLocation(team, world);
-		entity = ApocTools.spawnMob(type.toString(), loc);
+		entity = ApocTools.spawnMob(type.toString(), ApocTools.findSpawnLocation(loc));
 		if (horse != null) {
 			Horse mount = (Horse) entity.getWorld().spawnEntity(entity.getLocation(), EntityType.HORSE);
 			mount.setAdult();
@@ -135,10 +139,8 @@ public class ApocBoss implements ConfigurationSerializable, Listener {
 			}
 		}
 		bossBar.setVisible(true);
-		entity.setGlowing(true);
 		entity.setCustomName(ChatColor.LIGHT_PURPLE + name);
 		entity.setCustomNameVisible(true);
-		entity.setRemoveWhenFarAway(false);
 		if (entity instanceof PigZombie) {
 			((PigZombie) entity).setAnger(Integer.MAX_VALUE);
 		}
@@ -166,11 +168,7 @@ public class ApocBoss implements ConfigurationSerializable, Listener {
 				case OFF_HAND: entity.getEquipment().setItemInOffHand(equipment.get(slot)); break;
 			}
 		}
-		// TODO
-		entity.getEquipment().setItemInMainHandDropChance(1.0F);
-		entity.getEquipment().setItemInOffHandDropChance(1.0F);
-		ApocTools.setAggressive(entity);
-		ApocTools.setDestination(entity, loc);
+		return entity;
 	}
 	
 	@EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
