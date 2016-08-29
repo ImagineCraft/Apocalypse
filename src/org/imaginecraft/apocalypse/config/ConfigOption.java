@@ -4,9 +4,6 @@ import org.imaginecraft.apocalypse.config.ConfigDesc;
 
 public class ConfigOption {
 
-//	@ConfigDesc(path = "event.credit-spawned-mobs-only", desc = "Whether players should only score points for monsters spawned in sieges.")
-//	public static boolean EVENT_CREDIT_SPAWNED_MOBS_ONLY = ApocConfig.config.getBoolean("event.credit-spawned-mobs-only", true);
-
 	@ConfigDesc(path = "event.duration", desc = "How long in milliseconds the event should last.")
 	public static long EVENT_DURATION = ApocConfig.config.getLong("event.duration", 1209600000L);
 	
@@ -92,7 +89,7 @@ public class ConfigOption {
 	public static int PLAYERS_POINTS_PER_KILL_ZOMBIE = ApocConfig.config.getInt("players.points-per-kill.zombie", 5);
 
 	@ConfigDesc(path = "plugin.use-reflection", desc = "Whether reflection methods should be used. Reflection is slower but should always be forwards compatible.")
-	public static boolean PLUGIN_USE_REFLECTION = ApocConfig.config.getBoolean("plugin.use-reflection", true);
+	public static boolean PLUGIN_USE_REFLECTION = ApocConfig.config.getBoolean("plugin.use-reflection", false);
 
 	@ConfigDesc(path = "sieges.load-preloaded-bosses", desc = "Whether preloaded bosses should be added along with specified ones.")
 	public static boolean SIEGES_LOAD_PRELOADED_BOSSES = ApocConfig.config.getBoolean("sieges.load-preloaded-bosses", true);

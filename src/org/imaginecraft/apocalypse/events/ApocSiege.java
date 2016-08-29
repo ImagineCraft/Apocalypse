@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
@@ -20,7 +21,7 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.entity.Entity;
+import org.bukkit.entity.Creature;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -45,10 +46,11 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 
 	private Map<Block, Biome> biomes = new HashMap<Block, Biome>();
 	private Map<EntityType, Integer> mobs = new EnumMap<EntityType, Integer>(EntityType.class);
-	private Set<Entity> spawned = new HashSet<Entity>();
+	private Set<LivingEntity> spawned = new HashSet<LivingEntity>();
 	private Set<ApocBoss> bosses = new HashSet<ApocBoss>();
 	private BossBar bar;
 	private Biome biome;
+	private Location dest;
 	private int husks = 0, strays = 0, witherSkellies = 0,
 			spawnCount = 0;
 	private boolean storm = false, thunder = false;
@@ -60,6 +62,23 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
 		this.name = name;
 	}
+	
+	private BukkitRunnable setDestination = new BukkitRunnable() {
+		@Override
+		public void run() {
+			if (!spawned.isEmpty()) {
+				for (LivingEntity entity : spawned) {
+					if (!(entity instanceof Creature)
+							|| ((Creature)entity).getTarget() == null) {
+						ApocTools.setDestination(entity, dest);
+					}
+				}
+			}
+			else {
+				this.cancel();
+			}
+		}
+	};
 	
 	private BarStyle getBarStyle() {
 		if (spawned.size() >= 20) return BarStyle.SEGMENTED_20;
@@ -82,8 +101,20 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	}
 	
 	private double getProgress() {
-		System.out.println("Progress is " + ((double) spawned.size() / (double) spawnCount));
 		return (double) spawned.size() / (double) spawnCount;
+	}
+
+	public static ApocSiege getSiege(String siegeName) {
+		for (ApocSiege siege : plugin.getApocConfig().getSieges()) {
+			if (siege.getName().equalsIgnoreCase(siegeName)) return siege;
+		}
+		return null;
+	}
+	
+	public void purge() {
+		for (LivingEntity entity : spawned) {
+			entity.damage(Double.MAX_VALUE);
+		}
 	}
 	
 	public boolean removeBoss(ApocBoss boss) {
@@ -150,27 +181,39 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 				bar.addPlayer((Player) player);
 			}
 		}
-		Location loc = ApocTools.findCenterLocation(team, world);
-		for (int x = loc.getBlockX() - (int)ConfigOption.SIEGES_SPAWN_DISTANCE; x < loc.getBlockX() + ConfigOption.SIEGES_SPAWN_DISTANCE; x ++) {
-			for (int z = loc.getBlockZ() - (int)ConfigOption.SIEGES_SPAWN_DISTANCE; z < loc.getBlockZ() + ConfigOption.SIEGES_SPAWN_DISTANCE; z ++) {
-				Block block = loc.getWorld().getBlockAt(x, 0, z);
-				biomes.put(block, block.getBiome());
-				block.setBiome(biome);
+		dest = ApocTools.findCenterLocation(team, world);
+		if (biome != null) {
+			Set<Chunk> chunks = new HashSet<Chunk>();
+			for (int x = dest.getBlockX() - (int)ConfigOption.SIEGES_SPAWN_DISTANCE; x < dest.getBlockX() + ConfigOption.SIEGES_SPAWN_DISTANCE; x ++) {
+				for (int z = dest.getBlockZ() - (int)ConfigOption.SIEGES_SPAWN_DISTANCE; z < dest.getBlockZ() + ConfigOption.SIEGES_SPAWN_DISTANCE; z ++) {
+					Block block = dest.getWorld().getBlockAt(x, dest.getBlockY(), z);
+					if (dest.distanceSquared(block.getLocation()) <= ConfigOption.SIEGES_SPAWN_DISTANCE * ConfigOption.SIEGES_SPAWN_DISTANCE) {
+						biomes.put(block, block.getBiome());
+						block.setBiome(biome);
+						chunks.add(block.getChunk());
+					}
+				}
+			}
+			for (Chunk chunk : chunks) {
+				ApocTools.updateChunk(chunk);
 			}
 		}
-		loc.getWorld().setStorm(storm);
-		loc.getWorld().setThundering(thunder);
+		dest.getWorld().setStorm(storm);
+		dest.getWorld().setThundering(thunder);
 		List<ApocBoss> bossList = Lists.newArrayList(bosses);
 		new BukkitRunnable() {
 			int i = 0, j = 0;
 			@Override
 			public void run() {
 				if (i < mobList.size()) {
-					LivingEntity entity = ApocTools.spawnMob(mobList.get(i), ApocTools.findSpawnLocation(loc));
+					LivingEntity entity = ApocTools.spawnMob(mobList.get(i), ApocTools.findSpawnLocation(dest));
 					entity.setGlowing(true);
 					entity.setRemoveWhenFarAway(false);
+					ApocTools.setAggressive(entity);
+					ApocTools.setDestination(entity, dest);
 					spawned.add(entity);
 					spawnCount ++;
+					bar.setStyle(getBarStyle());
 					i ++;
 				}
 				else if (j < bossList.size()){
@@ -182,6 +225,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 				}
 			}
 		}.runTaskTimer(plugin, 0L, ApocTools.getTicks(ConfigOption.SIEGES_SPAWN_INTERVAL));
+		setDestination.runTaskTimer(plugin, ApocTools.getTicks(ConfigOption.SIEGES_SPAWN_INTERVAL), 20L);
 	}
 	
 	@SuppressWarnings("deprecation")
@@ -243,9 +287,15 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 						player.sendTitle(ChatColor.GREEN + this.name + " has been repelled!", null);
 					}
 				}
+				Set<Chunk> chunks = new HashSet<Chunk>();
 				for (Block block : biomes.keySet()) {
 					block.setBiome(biomes.get(block));
+					chunks.add(block.getChunk());
 				}
+				for (Chunk chunk : chunks) {
+					ApocTools.updateChunk(chunk);
+				}
+				setDestination.cancel();
 			}
 		}
 	}
@@ -254,6 +304,9 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	public static ApocSiege deserialize(Map<String, Object> args) {
 		String name = (String) args.get("name");
 		ApocSiege siege = new ApocSiege(name);
+		if (args.containsKey("biome")) siege.setBiome(Biome.valueOf((String) args.get("biome")));
+		if (args.containsKey("storm")) siege.setStorm((boolean) args.get("storm"));
+		if (args.containsKey("thunder")) siege.setThunder((boolean) args.get("thunder"));
 		if (args.containsKey("bosses")) {
 			List<String> bossList = (List<String>) args.get("bosses");
 			for (String bossName : bossList) {
@@ -274,6 +327,9 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	public Map<String, Object> serialize() {
 		Map<String, Object> result = new LinkedHashMap<String, Object>();
 		result.put("name", name);
+		if (biome != null) result.put("biome", biome.toString());
+		if (storm) result.put("storm", storm);
+		if (thunder) result.put("thunder", thunder);
 		if (!bosses.isEmpty()) {
 			List<String> bossList = new ArrayList<String>();
 			for (ApocBoss boss : bosses) {
@@ -292,13 +348,6 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 			result.put("mobs", mobMap);
 		}
 		return result;
-	}
-
-	public static ApocSiege getSiege(String siegeName) {
-		for (ApocSiege siege : plugin.getApocConfig().getSieges()) {
-			if (siege.getName().equalsIgnoreCase(siegeName)) return siege;
-		}
-		return null;
 	}
 	
 }

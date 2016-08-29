@@ -26,6 +26,12 @@ public class ApocComExec implements CommandExecutor {
 	private final Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
 	private final ApocConfig config = plugin.getApocConfig();
 	private ApocEvent event = config.getEvent();
+	private ApocTeam testTeam = new ApocTeam(ChatColor.GRAY, "Test");
+	
+	public ApocComExec() {
+		testTeam.setCanJoin(false);
+		event.addTeam(testTeam);		
+	}
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command com, String name, String[] args) {
@@ -39,12 +45,17 @@ public class ApocComExec implements CommandExecutor {
 								if (ConfigOption.PLAYERS_CAN_SWITCH_TEAMS) {
 									ApocTeam newTeam = ApocTeam.getTeam(args[1]);
 									if (newTeam != null) {
-										if (newTeam.getSize() < ConfigOption.TEAMS_MAXIMUM_MEMBERS) {
-											newTeam.addPlayer(player.getUniqueId());
-											sender.sendMessage(ChatColor.GREEN + "You successfully joined "+ newTeam.getName() + "!");
+										if (newTeam.canJoin()) {
+											if (newTeam.getSize() < ConfigOption.TEAMS_MAXIMUM_MEMBERS) {
+												newTeam.addPlayer(player.getUniqueId());
+												sender.sendMessage(ChatColor.GREEN + "You successfully joined "+ newTeam.getName() + "!");
+											}
+											else {
+												sender.sendMessage(ChatColor.RED + newTeam.getName() + " is already full.");
+											}
 										}
 										else {
-											sender.sendMessage(ChatColor.RED + newTeam.getName() + " is already full.");
+											sender.sendMessage(ChatColor.RED + "Team '" + args[1] + "' isn't joinable.");
 										}
 									}
 									else {
@@ -221,11 +232,9 @@ public class ApocComExec implements CommandExecutor {
 							Player player = (Player) sender;
 							ApocBoss boss = ApocBoss.getBoss(bossName);
 							if (boss != null) {
-								ApocTeam team = ApocTeam.getTeam("Test");
-								if (team == null) team = new ApocTeam(ChatColor.GRAY, "Test");
-								team.setSpawn(player.getLocation());
-								team.addPlayer(player.getUniqueId());
-								boss.spawn(team, player.getWorld());
+								testTeam.setSpawn(player.getLocation());
+								testTeam.addPlayer(player.getUniqueId());
+								boss.spawn(testTeam, player.getWorld());
 							}
 							else {
 								sender.sendMessage(ChatColor.RED + "Unknown boss: " + bossName + ".");
@@ -255,11 +264,9 @@ public class ApocComExec implements CommandExecutor {
 							Player player = (Player) sender;
 							ApocSiege siege = ApocSiege.getSiege(siegeName);
 							if (siege != null) {
-								ApocTeam team = ApocTeam.getTeam("Test");
-								if (team == null) team = new ApocTeam(ChatColor.GRAY, "Test");
-								team.setSpawn(player.getLocation());
-								team.addPlayer(player.getUniqueId());
-								siege.spawn(team, player.getWorld());
+								testTeam.setSpawn(player.getLocation());
+								testTeam.addPlayer(player.getUniqueId());
+								siege.spawn(testTeam, player.getWorld());
 							}
 							else {
 								sender.sendMessage(ChatColor.RED + "Unknown siege: " + siegeName + ".");

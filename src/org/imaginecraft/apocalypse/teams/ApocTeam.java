@@ -23,6 +23,7 @@ public class ApocTeam implements ConfigurationSerializable {
 	
 	private ApocEvent event = plugin.getApocConfig().getEvent();
 	
+	private boolean canJoin = true;
 	private Team team;
 	private Location spawn, town;
 	
@@ -55,6 +56,10 @@ public class ApocTeam implements ConfigurationSerializable {
 		scores.put(uuid, score + amount);
 		event.getObjective().getScore(getPlayer(uuid).getName()).setScore(score + amount);
 		return score + amount;
+	}
+	
+	public boolean canJoin() {
+		return canJoin;
 	}
 	
 	public ChatColor getColor() {
@@ -124,6 +129,10 @@ public class ApocTeam implements ConfigurationSerializable {
 		scores.clear();
 	}
 	
+	public void setCanJoin(boolean canJoin) {
+		this.canJoin = canJoin;
+	}
+	
 	public void setColor(ChatColor color) {
 		this.color = color;
 		team.setPrefix(color.toString());
@@ -151,7 +160,6 @@ public class ApocTeam implements ConfigurationSerializable {
 			}
 			result.put("scores", scoreMap);
 		}
-		// TODO Auto-generated method stub
 		return result;
 	}
 	

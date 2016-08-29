@@ -31,6 +31,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Skeleton;
 import org.bukkit.entity.Skeleton.SkeletonType;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -45,6 +46,7 @@ import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.injector.PacketConstructor;
 import com.comphenix.protocol.wrappers.BlockPosition;
 import com.comphenix.protocol.wrappers.ChunkCoordIntPair;
 import com.comphenix.protocol.wrappers.MultiBlockChangeInfo;
@@ -64,27 +66,16 @@ public class ApocTools {
 	private final static int MILLISECONDS_PER_HOUR = MILLISECONDS_PER_MINUTE * 60;
 	private final static int MILLISECONDS_PER_DAY = MILLISECONDS_PER_HOUR * 24;
 
-	private final static Class<?> nmsEntityBlaze = resolveClass(NMS_PREFIX + "EntityBlaze"),
-			nmsEntityCreature = resolveClass(NMS_PREFIX + "EntityCreature"),
-			nmsEntityHuman = resolveClass(NMS_PREFIX + "EntityHuman"),
-			nmsEntityInsentient = resolveClass(NMS_PREFIX + "EntityInsentient"),
+	private final static Class<?> nmsEntityCreature = resolveClass(NMS_PREFIX + "EntityCreature"),
 			nmsEntityLiving = resolveClass(NMS_PREFIX + "EntityLiving"),
-			nmsEntitySpider = resolveClass(NMS_PREFIX + "EntitySpider"),
 			nmsPathfinderGoal = resolveClass(NMS_PREFIX + "PathfinderGoal"),
-			nmsPathfinderGoalBlazeFireball = resolveClass(NMS_PREFIX + "EntityBlaze$PathfinderGoalBlazeFireball"),
-			nmsPathfinderGoalFloat = resolveClass(NMS_PREFIX + "PathfinderGoalFloat"),
-			nmsPathfinderGoalHurtByTarget = resolveClass(NMS_PREFIX + "PathfinderGoalHurtByTarget"),
-			nmsPathfinderGoalLeapAtTarget = resolveClass(NMS_PREFIX + "PathfinderGoalLeapAtTarget"),
-			nmsPathfinderGoalRandomLookaround = resolveClass(NMS_PREFIX + "PathfinderGoalRandomLookaround"),
-			nmsPathfinderGoalLookAtPlayer = resolveClass(NMS_PREFIX + "PathfinderGoalLookAtPlayer"),
-			nmsPathfinderGoalRandomStroll = resolveClass(NMS_PREFIX + "PathfinderGoalRandomStroll"),
-			nmsPathfinderGoalSpiderMeleeAttack = resolveClass(NMS_PREFIX + "EntitySpider$PathfinderGoalSpiderMeleeAttack"),
-			nmsPathfinderGoalSpiderNearestAttackableTarget = resolveClass(NMS_PREFIX + "EntitySpider$PathfinderGoalSpiderNearestAttackableTarget");
+			nmsPathfinderGoalHurtByTarget = resolveClass(NMS_PREFIX + "PathfinderGoalHurtByTarget");
 	
 	private static Map<BlockPosition, PacketContainer> blocks = new HashMap<BlockPosition, PacketContainer>();
 	
 	private static NMSLib nms;
-	private final static ProtocolManager pm = ProtocolLibrary.getProtocolManager();;
+	private final static ProtocolManager pm = ProtocolLibrary.getProtocolManager();
+	private static PacketConstructor chunkConst;
 	private final static Random random = new Random();
 	
 	public ApocTools() {
@@ -290,7 +281,8 @@ public class ApocTools {
 			if (obj instanceof Entity) {
 				return getPrivateField(obj, "entity").get(obj);
 			}
-			else if (obj instanceof World) {
+			else if (obj instanceof Chunk
+					|| obj instanceof World) {
 				return getPrivateMethod(obj, "getHandle").invoke(obj);
 			}
 		} catch (Exception e) {
@@ -377,51 +369,15 @@ public class ApocTools {
 			try {
 				Object nmsEntity = getHandle(entity);
 				nmsEntity.getClass().getMethod("setGoalTarget", nmsEntityLiving).invoke(nmsEntity, (Object)null);
-				Object goalSelector = nmsEntity.getClass().getField("goalSelector").get(nmsEntity);
 				Object targetSelector = nmsEntity.getClass().getField("goalSelector").get(nmsEntity);
-				Set<?> goalB = (Set<?>) getPrivateField(goalSelector, "b").get(goalSelector);
-				Set<?> goalC = (Set<?>) getPrivateField(goalSelector, "c").get(goalSelector);
 				Set<?> targetB = (Set<?>) getPrivateField(targetSelector, "b").get(targetSelector);
 				Set<?> targetC = (Set<?>) getPrivateField(targetSelector, "c").get(targetSelector);
-				goalB.clear();
-				goalC.clear();
 				targetB.clear();
 				targetC.clear();
-				Method goalMethod = goalSelector.getClass().getMethod("a", int.class, nmsPathfinderGoal);
 				Method targetMethod = targetSelector.getClass().getMethod("a", int.class, nmsPathfinderGoal);
-				goalMethod.invoke(goalSelector, 0, nmsPathfinderGoalFloat.getConstructor(nmsEntityInsentient)
-						.newInstance(nmsEntity));
-//				goalMethod.invoke(goalSelector, 5, cusPathfinderGoalWalkToLocation.getConstructor(nmsEntityInsentient, Location.class, double.class)
-//						.newInstance(nmsEntity, loc, 1.0D));
-				goalMethod.invoke(goalSelector, 7, nmsPathfinderGoalRandomStroll.getConstructor(nmsEntityCreature, double.class)
-						.newInstance(nmsEntity, 1.0D));
-				goalMethod.invoke(goalSelector, 8, nmsPathfinderGoalLookAtPlayer.getConstructor(nmsEntityInsentient, Class.class, float.class)
-						.newInstance(nmsEntity, nmsEntityHuman, 8.0F));
-				goalMethod.invoke(goalSelector, 8, nmsPathfinderGoalRandomLookaround.getConstructor(nmsEntityInsentient)
-						.newInstance(nmsEntity));
 				targetMethod.invoke(targetSelector, 1, nmsPathfinderGoalHurtByTarget.getConstructor(nmsEntityCreature, boolean.class, Class[].class)
 						.newInstance(nmsEntity, true, new Class[0]));
 				switch (entity.getType()) {
-					case BLAZE:
-						goalMethod.invoke(goalSelector, 4, nmsPathfinderGoalBlazeFireball.getConstructor(nmsEntityBlaze)
-								.newInstance(nmsEntity));
-						break;
-					case CAVE_SPIDER: case SPIDER:
-						goalMethod.invoke(goalSelector, 3, nmsPathfinderGoalLeapAtTarget.getConstructor(nmsEntityInsentient, float.class)
-								.newInstance(nmsEntity, 0.4F));
-						goalMethod.invoke(goalSelector, 4, nmsPathfinderGoalSpiderNearestAttackableTarget.getConstructor(nmsEntitySpider, Class.class)
-								.newInstance(nmsEntity, nmsEntityHuman));
-						targetMethod.invoke(targetSelector, 2, nmsPathfinderGoalSpiderMeleeAttack.getConstructor(nmsEntitySpider)
-								.newInstance(nmsEntity));
-						break;
-					case CREEPER:
-						// TODO
-					case SKELETON:
-						// TODO
-					case SNOWMAN:
-						// TODO
-					case WOLF:
-						// TODO
 					default:
 						// TODO
 				}
@@ -483,7 +439,10 @@ public class ApocTools {
 			ApocTools.blockDisguise(frame, Material.OBSIDIAN);
 			ApocTools.blockDisguise(portal, Material.PORTAL, dir == BlockFace.NORTH ? 0 : 2);
 			entity = (LivingEntity) loc.getWorld().spawnEntity(loc, eType);
-			if (type.equalsIgnoreCase("wither_skeleton")) ((Skeleton) entity).setSkeletonType(SkeletonType.WITHER);
+			if (type.equalsIgnoreCase("wither_skeleton")) {
+				((Skeleton) entity).setSkeletonType(SkeletonType.WITHER);
+				entity.getEquipment().setItemInMainHand(new ItemStack(Material.STONE_SWORD));
+			}
 			new BukkitRunnable() {
 				@Override
 				public void run() {
@@ -495,38 +454,47 @@ public class ApocTools {
 				}
 			}.runTaskLater(plugin, 20L);
 		}
-		else if (eType == EntityType.CAVE_SPIDER
-				|| eType == EntityType.SPIDER) {
-			// TODO
-		}
-		else if (eType == EntityType.CREEPER) {
-			// TODO
-		}
-		else if (eType == EntityType.ENDERMAN
-				|| eType == EntityType.ENDERMITE) {
-			// TODO
-		}
-		else if (eType == EntityType.POLAR_BEAR
-				|| eType == EntityType.SNOWMAN) {
-			// TODO
-		}
-		else if (eType == EntityType.SILVERFISH) {
-			// TODO
-		}
-		else if (eType == EntityType.SKELETON
-				|| eType == EntityType.ZOMBIE) {
-			// TODO
-		}
-		else if (eType == EntityType.SLIME) {
-			// TODO
-		}
-		else if (eType == EntityType.WITCH) {
-			// TODO
-		}
-		else if (eType == EntityType.WOLF) {
-			// TODO
+//		else if (eType == EntityType.CAVE_SPIDER
+//				|| eType == EntityType.SPIDER) {
+//			// TODO
+//		}
+//		else if (eType == EntityType.CREEPER) {
+//			// TODO
+//		}
+//		else if (eType == EntityType.ENDERMAN
+//				|| eType == EntityType.ENDERMITE) {
+//			// TODO
+//		}
+//		else if (eType == EntityType.POLAR_BEAR
+//				|| eType == EntityType.SNOWMAN) {
+//			// TODO
+//		}
+//		else if (eType == EntityType.SILVERFISH) {
+//			// TODO
+//		}
+//		else if (eType == EntityType.SKELETON
+//				|| eType == EntityType.ZOMBIE) {
+//			// TODO
+//		}
+//		else if (eType == EntityType.SLIME) {
+//			// TODO
+//		}
+//		else if (eType == EntityType.WITCH) {
+//			// TODO
+//		}
+//		else if (eType == EntityType.WOLF) {
+//			// TODO
+//		}
+		else {
+			entity = (LivingEntity) loc.getWorld().spawnEntity(loc, eType);
 		}
 		return entity;
+	}
+	
+	public static void updateChunk(Chunk chunk) {
+		if (chunkConst == null) chunkConst = pm.createPacketConstructor(PacketType.Play.Server.MAP_CHUNK, getHandle(chunk), 0);
+		PacketContainer packet = chunkConst.createPacket(getHandle(chunk), 65535);
+		pm.broadcastServerPacket(packet);
 	}
 
 }

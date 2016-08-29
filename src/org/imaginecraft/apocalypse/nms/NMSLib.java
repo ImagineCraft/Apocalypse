@@ -1,5 +1,7 @@
 package org.imaginecraft.apocalypse.nms;
 
+import java.lang.reflect.Field;
+
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 
@@ -9,13 +11,14 @@ public interface NMSLib {
 	
 	public void setDestination(LivingEntity entity, Location loc);
 	
-	public default Class<?> getPrivateClass(String className, Class<?> clazz) {
-		// TODO
-		return null;
-	}
-	
-	public default Object getPrivateField(String fieldName, Class<?> clazz, Object object) {
-		// TODO
+	public default Field getPrivateField(String fieldName, Class<?> clazz) {
+		try {
+			Field field = clazz.getDeclaredField(fieldName);
+			field.setAccessible(true);
+			return field;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		return null;
 	}
 	
