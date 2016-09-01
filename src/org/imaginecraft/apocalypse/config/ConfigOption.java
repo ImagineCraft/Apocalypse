@@ -18,6 +18,9 @@ public class ConfigOption {
 	@ConfigDesc(path = "players.can-create-portals", desc = "Whether players can create portals in the event world.")
 	public static boolean PLAYERS_CAN_CREATE_PORTALS = ApocConfig.config.getBoolean("players.can-create-portals", false);
 	
+	@ConfigDesc(path = "players.can-join-late", desc = "Whether players can join the event after it starts.")
+	public static boolean PLAYERS_CAN_JOIN_LATE = ApocConfig.config.getBoolean("players.can-join-late", true);
+	
 	@ConfigDesc(path = "players.can-pick-team", desc = "Whether players can pick their team when joining.")
 	public static boolean PLAYERS_CAN_PICK_TEAM = ApocConfig.config.getBoolean("players.can-pick-team", false);
 	

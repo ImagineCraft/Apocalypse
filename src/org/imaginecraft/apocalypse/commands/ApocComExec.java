@@ -33,7 +33,6 @@ public class ApocComExec implements CommandExecutor {
 		event.addTeam(testTeam);		
 	}
 
-	@Override
 	public boolean onCommand(CommandSender sender, Command com, String name, String[] args) {
 		if (args.length > 0) {
 			if (args[0].equalsIgnoreCase("join")) {

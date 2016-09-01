@@ -218,7 +218,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	
 	private void spawnMobs(List<Object> spawnList) {
 		for (int i = 0; i < spawnList.size(); i ++) {
-			Object spawn = spawnList.get(i);
+			final Object spawn = spawnList.get(i);
 			new BukkitRunnable() {
 				@Override
 				public void run() {

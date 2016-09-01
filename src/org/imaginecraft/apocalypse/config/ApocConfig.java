@@ -1,10 +1,7 @@
 package org.imaginecraft.apocalypse.config;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,6 +43,7 @@ public class ApocConfig {
 	private ApocEvent event;
 	
 	public ApocConfig() {
+		// Make bosses, sieges, and teams serializable
 		ConfigurationSerialization.registerClass(ApocBoss.class, "ApocBoss");
 		ConfigurationSerialization.registerClass(ApocSiege.class, "ApocSiege");
 		ConfigurationSerialization.registerClass(ApocTeam.class, "ApocTeam");
@@ -61,24 +59,6 @@ public class ApocConfig {
 			if (!file.exists()) {
 				try {
 					file.createNewFile();
-					// Check to see if a default yml file is included, if so export it
-					if (plugin.getResource(file.getName()) != null) {
-						byte[] buffer = new byte[8 * 1024];
-						InputStream in = plugin.getResource(file.getName());
-						try {
-							OutputStream out = new FileOutputStream(file);
-							try {
-								int bytesRead;
-								while ((bytesRead = in.read(buffer)) != -1) {
-									out.write(buffer, 0, bytesRead);
-								}
-							} finally {
-								out.close();
-							}
-						} finally {
-							in.close();
-						}
-					}
 				} catch (IOException e) {
 					// Unable to create new yml file
 					e.printStackTrace();

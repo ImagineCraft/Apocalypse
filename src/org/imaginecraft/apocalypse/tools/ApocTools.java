@@ -417,8 +417,8 @@ public class ApocTools {
 			int maxX = Math.abs(dir.getModZ() * 2);
 			int minZ = -Math.abs(dir.getModX());
 			int maxZ = Math.abs(dir.getModX() * 2);
-			List<Block> frame = new ArrayList<Block>(),
-					portal = new ArrayList<Block>();
+			final List<Block> frame = new ArrayList<Block>();
+			final List<Block> portal = new ArrayList<Block>();
 			for (int x = minX; x <= maxX; x ++) {
 				for (int y = -1; y <= height; y ++) {
 					for (int z = minZ; z <= maxZ; z ++) {

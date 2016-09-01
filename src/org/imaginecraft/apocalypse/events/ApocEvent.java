@@ -49,7 +49,6 @@ public class ApocEvent {
 	
 	private Runnable warning = new BukkitRunnable() {
 		int i = warnings;
-		@Override
 		public void run() {
 			long wTime = (i / warnings) * warningTime;
 			if (i > 0) {
@@ -71,15 +70,6 @@ public class ApocEvent {
 			}
 		}
 	};
-	
-//	/**
-//	 * Adds points to the specified player.
-//	 */
-//	@SuppressWarnings("deprecation")
-//	public void addPoints(OfflinePlayer player, int amt) {
-//		int i = objective.getScore(player).getScore();
-//		objective.getScore(player).setScore(i + amt);
-//	}
 	
 	public void addTeam(ApocTeam team) {
 		teams.add(team);
