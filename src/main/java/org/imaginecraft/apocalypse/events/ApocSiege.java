@@ -21,7 +21,6 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.entity.Creature;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -61,22 +60,6 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
 		this.name = name;
 	}
-	
-	private BukkitRunnable setDestination = new BukkitRunnable() {
-		@Override
-		public void run() {
-			if (!spawned.isEmpty()) {
-				for (LivingEntity entity : spawned.keySet()) {
-					if (entity != null
-							&& !entity.isDead()
-							&& entity instanceof Creature
-							&& ((Creature)entity).getTarget() == null) {
-						tools.setDestination(entity, dest);
-					}
-				}
-			}
-		}
-	};
 	
 	private BarStyle getBarStyle() {
 		if (spawned.size() >= 20) return BarStyle.SEGMENTED_20;
@@ -213,7 +196,6 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 		updateBiome();
 		dest.getWorld().setStorm(storm);
 		dest.getWorld().setThundering(thunder);
-		setDestination.runTaskTimer(plugin, ApocTools.getTicks(ConfigOption.SIEGES_SPAWN_INTERVAL), 20L);
 	}
 	
 	private void spawnMobs(List<Object> spawnList) {
@@ -234,8 +216,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 					if (entity != null) {
 						entity.setGlowing(true);
 						entity.setRemoveWhenFarAway(false);
-						tools.setAggressive(entity);
-						tools.setDestination(entity, dest);
+						tools.setAggressive(entity, dest);
 						bar.setStyle(getBarStyle());
 					}
 				}
@@ -294,7 +275,6 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 				for (Chunk chunk : chunks) {
 					tools.updateChunk(chunk);
 				}
-				setDestination.cancel();
 			}
 		}
 	}

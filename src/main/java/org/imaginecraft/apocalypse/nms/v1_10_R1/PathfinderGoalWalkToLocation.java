@@ -29,6 +29,10 @@ public class PathfinderGoalWalkToLocation extends PathfinderGoal {
 	@Override
 	public void c() {
 		entity.onGround = true;
+		Location start = new Location(loc.getWorld(), entity.locX, entity.locY, entity.locZ);
+		while (start.distanceSquared(loc) > 20 * 20) {
+			loc = start.toVector().midpoint(loc.toVector()).toLocation(loc.getWorld());
+		}
 		PathEntity pathEntity = navigation.a(loc.getX(), loc.getY(), loc.getZ());
 		navigation.a(pathEntity, speed);
 	}

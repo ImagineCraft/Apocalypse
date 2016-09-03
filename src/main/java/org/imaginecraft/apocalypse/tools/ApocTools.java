@@ -315,7 +315,7 @@ public class ApocTools {
 	 * <p>
 	 * Will fail if distance is too great or entity and location are in different worlds.
 	 */
-	public void setAggressive(LivingEntity entity) {
+	public void setAggressive(LivingEntity entity, Location loc) {
 		if (ConfigOption.PLUGIN_USE_REFLECTION
 				|| nms == null) {
 			try {
@@ -338,17 +338,7 @@ public class ApocTools {
 			}
 		}
 		else {
-			nms.setAggressive(entity);
-		}
-	}
-	
-	public void setDestination(LivingEntity entity, Location loc) {
-		if (ConfigOption.PLUGIN_USE_REFLECTION
-				|| nms == null) {
-			// TODO
-		}
-		else {
-			nms.setDestination(entity, loc);
+			nms.setAggressive(entity, loc);
 		}
 	}
 	

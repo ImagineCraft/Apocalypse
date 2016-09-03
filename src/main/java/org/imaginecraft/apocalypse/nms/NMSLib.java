@@ -7,9 +7,7 @@ import org.bukkit.entity.LivingEntity;
 
 public interface NMSLib {
 
-	public void setAggressive(LivingEntity entity);
-	
-	public void setDestination(LivingEntity entity, Location loc);
+	public void setAggressive(LivingEntity entity, Location loc);
 	
 	public default Field getPrivateField(String fieldName, Class<?> clazz) {
 		try {
