@@ -1,6 +1,6 @@
 name: Apocalypse
 main: org.imaginecraft.apocalypse.Apocalypse
-version: 0.1.0
+version: ${project.version}
 author: sirrus86
 depend: [ProtocolLib]
 
