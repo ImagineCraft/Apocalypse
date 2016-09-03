@@ -73,18 +73,12 @@ public class ApocTools {
 	
 	private static Map<BlockPosition, PacketContainer> blocks = new HashMap<BlockPosition, PacketContainer>();
 	
-	private static NMSLib nms;
-	private final static ProtocolManager pm = ProtocolLibrary.getProtocolManager();
-	private static PacketConstructor chunkConst;
-	private final static Random random = new Random();
+	private final NMSLib nms = getNMSLib();
+	private final ProtocolManager pm = ProtocolLibrary.getProtocolManager();
+	private PacketConstructor chunkConst;
+	private final Random random = new Random();
 	
 	public ApocTools() {
-		try {
-			nms = (NMSLib) Class.forName(CUSTOM_PREFIX + "NMSLib").newInstance();
-		} catch (Exception e) {
-			plugin.getLogger().warning(ChatColor.RED + "NMSLib not found for this version of Bukkit, using reflection instead.");
-			nms = null;
-		}
 		pm.addPacketListener(new PacketAdapter(plugin, PacketType.Play.Server.BLOCK_CHANGE) {
 			@Override
 			public void onPacketSending(PacketEvent event) {
@@ -99,38 +93,6 @@ public class ApocTools {
 	}
 	
 	/**
-	 * Makes a block appear as a block of a different material.
-	 * <p>
-	 * Uses packets to maintain the appearance. The disguise will remain until {@link PowerTools#blockUpdate(Block)} is called.
-	 * <p>
-	 * Block disguises are not maintained after the server restarts or reloads.
-	 * @param block - Block to disguise
-	 * @param material - Material to disguise the block as. Using non-block materials may kick any players who can see it
-	 */
-	public static void blockDisguise(Block block, Material material) {
-		blockDisguise(block, material, 0);
-	}
-	
-	/**
-	 * Makes a block appear as a block of a different material.
-	 * <p>
-	 * Uses packets to maintain the appearance. The disguise will remain until {@link PowerTools#blockUpdate(Block)} is called.
-	 * <p>
-	 * Block disguises are not maintained after the server restarts or reloads.
-	 * @param block - Block to disguise
-	 * @param material - Material to disguise the block as. Using non-block materials may kick any players who can see it
-	 * @param meta - Metadata to be applied to the packet. Useful for materials that appear different with metadata (e.g. Wool)
-	 */
-	public static void blockDisguise(Block block, Material material, int meta) {
-		BlockPosition bPos = new BlockPosition(block.getX(), block.getY(), block.getZ());
-		PacketContainer packet = pm.createPacket(PacketType.Play.Server.BLOCK_CHANGE, true);
-		packet.getBlockPositionModifier().write(0, bPos);
-		packet.getBlockData().write(0, WrappedBlockData.createData(material, meta));
-		pm.broadcastServerPacket(packet);
-		blocks.put(bPos, packet);
-	}
-	
-	/**
 	 * Makes a collection of blocks appear as a different material.
 	 * <p>
 	 * Uses packets to maintain the appearance. The disguise will remain until {@link PowerTools#blockUpdate(Collection<Block>)} is called.
@@ -139,7 +101,7 @@ public class ApocTools {
 	 * @param blocks - Blocks to disguise
 	 * @param material - Material to disguise the blocks as. Using non-block materials may kick any players who can see it
 	 */
-	public static void blockDisguise(Collection<Block> blocks, Material material) {
+	public void blockDisguise(Collection<Block> blocks, Material material) {
 		blockDisguise(blocks, material, 0);
 	}
 	
@@ -153,48 +115,29 @@ public class ApocTools {
 	 * @param material - Material to disguise the blocks as. Using non-block materials may kick any players who can see it
 	 * @param meta - Metadata to be applied to the packet. Useful for materials that appear different with metadata (e.g. Wool)
 	 */
-	public static void blockDisguise(Collection<Block> blocks, Material material, int meta) {
+	public void blockDisguise(Collection<Block> blocks, Material material, int meta) {
 		Map<Chunk, List<Block>> chunks = new HashMap<Chunk, List<Block>>();
 		for (Block block : blocks) {
-			blockTemporary(block, material, meta);
+			BlockPosition bPos = new BlockPosition(block.getX(), block.getY(), block.getZ());
+			PacketContainer packet = pm.createPacket(PacketType.Play.Server.BLOCK_CHANGE, true);
+			packet.getBlockPositionModifier().write(0, bPos);
+			packet.getBlockData().write(0, WrappedBlockData.createData(material, meta));
+			ApocTools.blocks.put(bPos, packet);
 			if (!chunks.containsKey(block.getChunk())) {
 				chunks.put(block.getChunk(), new ArrayList<Block>());
 			}
 			chunks.get(block.getChunk()).add(block);
 		}
 		for (Chunk chunk : chunks.keySet()) {
-			Block[] cBlocks = chunks.get(chunk).toArray(new Block[chunks.get(chunk).size()]);
 			PacketContainer packet = pm.createPacket(PacketType.Play.Server.MULTI_BLOCK_CHANGE, true);
 			packet.getChunkCoordIntPairs().write(0, new ChunkCoordIntPair(chunk.getX(), chunk.getZ()));
-			MultiBlockChangeInfo[] changes = new MultiBlockChangeInfo[cBlocks.length];
-			for (int i = 0; i < cBlocks.length; i ++) {
-				changes[i] = new MultiBlockChangeInfo(cBlocks[i].getLocation(), WrappedBlockData.createData(material, meta));
+			MultiBlockChangeInfo[] changes = new MultiBlockChangeInfo[chunks.get(chunk).size()];
+			for (int i = 0; i < changes.length; i ++) {
+				changes[i] = new MultiBlockChangeInfo(chunks.get(chunk).get(i).getLocation(), WrappedBlockData.createData(material, meta));
 			}
 			packet.getMultiBlockChangeInfoArrays().write(0, changes);
 			pm.broadcastServerPacket(packet);
 		}
-	}
-	
-	private static void blockTemporary(Block block, Material material, int meta) {
-		BlockPosition bPos = new BlockPosition(block.getX(), block.getY(), block.getZ());
-		PacketContainer packet = pm.createPacket(PacketType.Play.Server.BLOCK_CHANGE, true);
-		packet.getBlockPositionModifier().write(0, bPos);
-		packet.getBlockData().write(0, WrappedBlockData.createData(material, meta));
-		blocks.put(bPos, packet);
-	}
-	
-	/**
-	 * Removes any disguises from a block, making it appear as it should again.
-	 * @param block - Block to update
-	 */
-	@SuppressWarnings("deprecation")
-	public static void blockUpdate(Block block) {
-		BlockPosition bPos = new BlockPosition(block.getX(), block.getY(), block.getZ());
-		PacketContainer packet = pm.createPacket(PacketType.Play.Server.BLOCK_CHANGE, true);
-		packet.getBlockPositionModifier().write(0, bPos);
-		packet.getBlockData().write(0, WrappedBlockData.createData(block.getType(), block.getData()));
-		pm.broadcastServerPacket(packet);
-		blocks.remove(bPos);
 	}
 	
 	/**
@@ -202,7 +145,7 @@ public class ApocTools {
 	 * @param blocks - Blocks to update
 	 */
 	@SuppressWarnings("deprecation")
-	public static void blockUpdate(Collection<Block> blocks) {
+	public void blockUpdate(Collection<Block> blocks) {
 		Map<Chunk, List<Block>> chunks = new HashMap<Chunk, List<Block>>();
 		for (Block block : blocks) {
 			if (!chunks.containsKey(block.getChunk())) {
@@ -211,19 +154,19 @@ public class ApocTools {
 			chunks.get(block.getChunk()).add(block);
 		}
 		for (Chunk chunk : chunks.keySet()) {
-			Block[] cBlocks = chunks.get(chunk).toArray(new Block[chunks.get(chunk).size()]);
 			PacketContainer packet = pm.createPacket(PacketType.Play.Server.MULTI_BLOCK_CHANGE, true);
 			packet.getChunkCoordIntPairs().write(0, new ChunkCoordIntPair(chunk.getX(), chunk.getZ()));
-			MultiBlockChangeInfo[] changes = new MultiBlockChangeInfo[cBlocks.length];
-			for (int i = 0; i < cBlocks.length; i ++) {
-				changes[i] = new MultiBlockChangeInfo(cBlocks[i].getLocation(), WrappedBlockData.createData(cBlocks[i].getType(), cBlocks[i].getData()));
+			MultiBlockChangeInfo[] changes = new MultiBlockChangeInfo[chunks.get(chunk).size()];
+			for (int i = 0; i < changes.length; i ++) {
+				changes[i] = new MultiBlockChangeInfo(chunks.get(chunk).get(i).getLocation(),
+						WrappedBlockData.createData(chunks.get(chunk).get(i).getType(), chunks.get(chunk).get(i).getData()));
 			}
 			packet.getMultiBlockChangeInfoArrays().write(0, changes);
 			pm.broadcastServerPacket(packet);
 		}
 	}
 	
-	public static Location findCenterLocation(ApocTeam team, World world) {
+	public Location findCenterLocation(ApocTeam team, World world) {
 		Location loc = team.getTown();
 		if (loc == null) {
 			Location loc1 = team.getSpawn(), loc2 = team.getSpawn();
@@ -248,14 +191,14 @@ public class ApocTools {
 		return loc;
 	}
 	
-	public static Location findSpawnLocation(Location loc) {
+	public Location findSpawnLocation(Location loc) {
 		int x = (int) ((random.nextDouble() * ((loc.getX() + ConfigOption.SIEGES_SPAWN_DISTANCE) - (loc.getX() - ConfigOption.SIEGES_SPAWN_DISTANCE))) + loc.getX() - ConfigOption.SIEGES_SPAWN_DISTANCE);
 		int z = (int) ((random.nextDouble() * ((loc.getZ() + ConfigOption.SIEGES_SPAWN_DISTANCE) - (loc.getZ() - ConfigOption.SIEGES_SPAWN_DISTANCE))) + loc.getZ() - ConfigOption.SIEGES_SPAWN_DISTANCE);
 		return loc.getWorld().getHighestBlockAt(x, z).getLocation();
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static <T> Set<T> getClasses(Class<T> clazz) {
+	public <T> Set<T> getClasses(Class<T> clazz) {
 		Set<T> classes = new HashSet<T>();
 		try {
 			JarFile file = new JarFile(plugin.getJarFile());
@@ -289,6 +232,15 @@ public class ApocTools {
 			e.printStackTrace();
 		}
 		return null;
+	}
+	
+	private NMSLib getNMSLib() {
+		try {
+			return (NMSLib) Class.forName(CUSTOM_PREFIX + "NMSLib").newInstance();
+		} catch (Exception e) {
+			plugin.getLogger().warning(ChatColor.RED + "NMSLib not found for this version of Bukkit, using reflection instead.");
+			return null;
+		}
 	}
 	
 	private static Field getPrivateField(Object obj, String name) {
@@ -363,7 +315,7 @@ public class ApocTools {
 	 * <p>
 	 * Will fail if distance is too great or entity and location are in different worlds.
 	 */
-	public static void setAggressive(LivingEntity entity) {
+	public void setAggressive(LivingEntity entity) {
 		if (ConfigOption.PLUGIN_USE_REFLECTION
 				|| nms == null) {
 			try {
@@ -390,7 +342,7 @@ public class ApocTools {
 		}
 	}
 	
-	public static void setDestination(LivingEntity entity, Location loc) {
+	public void setDestination(LivingEntity entity, Location loc) {
 		if (ConfigOption.PLUGIN_USE_REFLECTION
 				|| nms == null) {
 			// TODO
@@ -400,7 +352,7 @@ public class ApocTools {
 		}
 	}
 	
-	public static LivingEntity spawnMob(String type, Location loc) {
+	public LivingEntity spawnMob(String type, Location loc) {
 		LivingEntity entity = null;
 		EntityType eType = null;
 		if (type.equalsIgnoreCase("husk")) eType = EntityType.ZOMBIE;
@@ -417,8 +369,8 @@ public class ApocTools {
 			int maxX = Math.abs(dir.getModZ() * 2);
 			int minZ = -Math.abs(dir.getModX());
 			int maxZ = Math.abs(dir.getModX() * 2);
-			final List<Block> frame = new ArrayList<Block>();
-			final List<Block> portal = new ArrayList<Block>();
+			List<Block> frame = new ArrayList<Block>();
+			List<Block> portal = new ArrayList<Block>();
 			for (int x = minX; x <= maxX; x ++) {
 				for (int y = -1; y <= height; y ++) {
 					for (int z = minZ; z <= maxZ; z ++) {
@@ -436,8 +388,8 @@ public class ApocTools {
 					}
 				}
 			}
-			ApocTools.blockDisguise(frame, Material.OBSIDIAN);
-			ApocTools.blockDisguise(portal, Material.PORTAL, dir == BlockFace.NORTH ? 0 : 2);
+			blockDisguise(frame, Material.OBSIDIAN);
+			blockDisguise(portal, Material.PORTAL, dir == BlockFace.NORTH ? 0 : 2);
 			entity = (LivingEntity) loc.getWorld().spawnEntity(loc, eType);
 			if (type.equalsIgnoreCase("wither_skeleton")) {
 				((Skeleton) entity).setSkeletonType(SkeletonType.WITHER);
@@ -449,8 +401,8 @@ public class ApocTools {
 					for (Block block : frame) {
 						block.getWorld().playEffect(block.getLocation(), Effect.STEP_SOUND, Material.OBSIDIAN);
 					}
-					ApocTools.blockUpdate(frame);
-					ApocTools.blockUpdate(portal);
+					blockUpdate(frame);
+					blockUpdate(portal);
 				}
 			}.runTaskLater(plugin, 20L);
 		}
@@ -491,7 +443,7 @@ public class ApocTools {
 		return entity;
 	}
 	
-	public static void updateChunk(Chunk chunk) {
+	public void updateChunk(Chunk chunk) {
 		if (chunkConst == null) chunkConst = pm.createPacketConstructor(PacketType.Play.Server.MAP_CHUNK, getHandle(chunk), 0);
 		PacketContainer packet = chunkConst.createPacket(getHandle(chunk), 65535);
 		pm.broadcastServerPacket(packet);

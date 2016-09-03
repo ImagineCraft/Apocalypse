@@ -57,6 +57,8 @@ public class ApocBoss implements ConfigurationSerializable, Listener {
 	private SkeletonType sType = SkeletonType.NORMAL;
 	private Villager.Profession zType = Villager.Profession.NORMAL;
 	
+	private final ApocTools tools = plugin.getApocTools();
+	
 	public ApocBoss(String name) {
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
 		this.name = name;
@@ -123,8 +125,8 @@ public class ApocBoss implements ConfigurationSerializable, Listener {
 	
 	public LivingEntity spawn(ApocTeam team, World world) {
 		this.team = team;
-		Location loc = ApocTools.findCenterLocation(team, world);
-		entity = ApocTools.spawnMob(type.toString(), ApocTools.findSpawnLocation(loc));
+		Location loc = tools.findCenterLocation(team, world);
+		entity = tools.spawnMob(type.toString(), tools.findSpawnLocation(loc));
 		if (horse != null) {
 			Horse mount = (Horse) entity.getWorld().spawnEntity(entity.getLocation(), EntityType.HORSE);
 			mount.setAdult();

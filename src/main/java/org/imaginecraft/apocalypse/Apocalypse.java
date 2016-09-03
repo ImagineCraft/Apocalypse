@@ -16,12 +16,13 @@ import org.imaginecraft.apocalypse.tools.ApocTools;
 public class Apocalypse extends JavaPlugin {
 
 	private ApocConfig config;
+	private ApocTools tools;
 	
 	@Override
 	public void onEnable() {
+		tools = new ApocTools();
 		if (!getDataFolder().exists()) getDataFolder().mkdirs();
 		config = new ApocConfig();
-		new ApocTools();
 		config.load();
 		getServer().getPluginManager().registerEvents(new ApocListener(), this);
 		getCommand("apocalypse").setExecutor(new ApocComExec());
@@ -37,6 +38,13 @@ public class Apocalypse extends JavaPlugin {
 	 */
 	public ApocConfig getApocConfig() {
 		return config;
+	}
+	
+	/**
+	 * TODO
+	 */
+	public ApocTools getApocTools() {
+		return tools;
 	}
 	
 	/**

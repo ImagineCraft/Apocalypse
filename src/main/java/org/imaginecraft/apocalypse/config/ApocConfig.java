@@ -41,6 +41,7 @@ public class ApocConfig {
 	private Set<ApocSiege> sieges = new HashSet<ApocSiege>();
 	
 	private ApocEvent event;
+	private final ApocTools tools = plugin.getApocTools();
 	
 	public ApocConfig() {
 		// Make bosses, sieges, and teams serializable
@@ -108,12 +109,12 @@ public class ApocConfig {
 			}
 		}
 		if (ConfigOption.SIEGES_LOAD_PRELOADED_BOSSES) {
-			for (ApocBoss boss : ApocTools.getClasses(ApocBoss.class)) {
+			for (ApocBoss boss : tools.getClasses(ApocBoss.class)) {
 				if (!bosses.contains(boss)) bosses.add(boss);
 			}
 		}
 		if (ConfigOption.SIEGES_LOAD_PRELOADED_SIEGES) {
-			for (ApocSiege siege : ApocTools.getClasses(ApocSiege.class)) {
+			for (ApocSiege siege : tools.getClasses(ApocSiege.class)) {
 				if (!sieges.contains(siege)) sieges.add(siege);
 			}
 		}

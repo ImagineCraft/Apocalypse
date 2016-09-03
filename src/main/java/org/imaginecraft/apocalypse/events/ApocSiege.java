@@ -52,10 +52,10 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	private Biome biome;
 	private Location dest;
 	private int husks = 0, strays = 0, witherSkellies = 0;
+	private String name;
 	private boolean storm = false, thunder = false;
 	private ApocTeam team;
-	
-	private String name;
+	private final ApocTools tools = plugin.getApocTools();
 	
 	public ApocSiege(String name) {
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -71,7 +71,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 							&& !entity.isDead()
 							&& entity instanceof Creature
 							&& ((Creature)entity).getTarget() == null) {
-						ApocTools.setDestination(entity, dest);
+						tools.setDestination(entity, dest);
 					}
 				}
 			}
@@ -208,7 +208,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 				bar.addPlayer((Player) player);
 			}
 		}
-		dest = ApocTools.findCenterLocation(team, world);
+		dest = tools.findCenterLocation(team, world);
 		spawnMobs(spawnList);
 		updateBiome();
 		dest.getWorld().setStorm(storm);
@@ -228,14 +228,14 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 						spawned.put(entity, ((ApocBoss)spawn).getPoints());
 					}
 					else {
-						entity = ApocTools.spawnMob(spawn.toString(), ApocTools.findSpawnLocation(dest));
+						entity = tools.spawnMob(spawn.toString(), tools.findSpawnLocation(dest));
 						spawned.put(entity, getPointValue(entity));
 					}
 					if (entity != null) {
 						entity.setGlowing(true);
 						entity.setRemoveWhenFarAway(false);
-						ApocTools.setAggressive(entity);
-						ApocTools.setDestination(entity, dest);
+						tools.setAggressive(entity);
+						tools.setDestination(entity, dest);
 						bar.setStyle(getBarStyle());
 					}
 				}
@@ -257,7 +257,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 				}
 			}
 			for (Chunk chunk : chunks) {
-				ApocTools.updateChunk(chunk);
+				tools.updateChunk(chunk);
 			}
 		}
 	}
@@ -292,7 +292,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 					chunks.add(block.getChunk());
 				}
 				for (Chunk chunk : chunks) {
-					ApocTools.updateChunk(chunk);
+					tools.updateChunk(chunk);
 				}
 				setDestination.cancel();
 			}
