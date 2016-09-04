@@ -1,10 +1,13 @@
 package org.imaginecraft.apocalypse.events;
 
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -26,7 +29,9 @@ import org.imaginecraft.apocalypse.tools.ApocTools;
 public class ApocEvent {
 	
 	private Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
+	private final ApocTools tools = plugin.getApocTools();
 	
+	private Map<UUID, ApocChatType> inChat = new HashMap<UUID, ApocChatType>();
 	private Set<ApocTeam> teams = new HashSet<ApocTeam>();
 	
 	private final EnumSet<ChatColor> colors = EnumSet.of(ChatColor.AQUA, ChatColor.BLUE, ChatColor.DARK_AQUA, ChatColor.DARK_BLUE,
@@ -49,12 +54,13 @@ public class ApocEvent {
 	
 	private Runnable warning = new BukkitRunnable() {
 		int i = warnings;
+		@Override
 		public void run() {
 			long wTime = (i / warnings) * warningTime;
 			if (i > 0) {
 				for (OfflinePlayer player : getAllPlayers()) {
 					if (player.isOnline()) {
-						((Player) player).sendMessage(ChatColor.GOLD + "The Apocalypse will begin in " + ApocTools.getTime(wTime) + ".");
+						((Player) player).sendMessage(ChatColor.GOLD + "The Apocalypse will begin in " + tools.getTime(wTime) + ".");
 					}
 				}
 				i --;
@@ -71,13 +77,23 @@ public class ApocEvent {
 		}
 	};
 	
+	/**
+	 * TODO
+	 * @param team
+	 */
 	public void addTeam(ApocTeam team) {
 		teams.add(team);
 	}
 	
+	/**
+	 * TODO
+	 * @param name
+	 * @return
+	 */
 	public ApocTeam createTeam(String name) {
 		ChatColor color = null;
-		if (name.startsWith("&")) {
+		if (name.startsWith("&")) name = name.replaceFirst("&", String.valueOf(ChatColor.COLOR_CHAR));
+		if (name.startsWith(String.valueOf(ChatColor.COLOR_CHAR))) {
 			String prefix = name.substring(0, 2);
 			name = name.substring(2);
 			if (ChatColor.getByChar(prefix) != null) {
@@ -93,6 +109,10 @@ public class ApocEvent {
 		return team;
 	}
 	
+	/**
+	 * TODO
+	 * @return
+	 */
 	public Set<OfflinePlayer> getAllPlayers() {
 		Set<OfflinePlayer> players = new HashSet<OfflinePlayer>();
 		for (ApocTeam team : teams) {
@@ -118,6 +138,7 @@ public class ApocEvent {
 		return newTeam;
 	}
 	
+	// Find a team color that isn't in use yet.
 	private ChatColor getAvailableTeamColor() {
 		int index = random.nextInt(colors.size());
 		Iterator<ChatColor> iter = colors.iterator();
@@ -129,52 +150,109 @@ public class ApocEvent {
 		return color;
 	}
 	
+	/**
+	 * TODO
+	 * @return
+	 */
 	public long getEndTime() {
 		return endTime;
 	}
 	
+	/**
+	 * TODO
+	 * @return
+	 */
 	public Objective getObjective() {
 		return objective;
 	}
 	
+	/**
+	 * TODO
+	 * @return
+	 */
 	public Scoreboard getScoreboard() {
 		return scoreboard;
 	}
 	
+	/**
+	 * TODO
+	 * @return
+	 */
 	public Set<ApocTeam> getTeams() {
 		return teams;
 	}
 	
+	/**
+	 * TODO
+	 * @return
+	 */
 	public World getWorld() {
 		return world;
 	}
 	
+	/**
+	 * TODO
+	 */
+	public ApocChatType getChatType(OfflinePlayer player) {
+		if (!inChat.containsKey(player.getUniqueId())) {
+			inChat.put(player.getUniqueId(), ApocChatType.OFF);
+		}
+		return inChat.get(player.getUniqueId());
+	}
+	
+	/**
+	 * TODO
+	 * @return
+	 */
 	public boolean isActive() {
 		return active;
 	}
 	
+	/**
+	 * TODO
+	 * @param team
+	 */
 	public void removeTeam(ApocTeam team) {
 		team.remove();
 		teams.remove(team);
 	}
 	
+	/**
+	 * TODO
+	 */
+	public void setChatType(OfflinePlayer player, ApocChatType type) {
+		inChat.put(player.getUniqueId(), type);
+	}
+	
+	/**
+	 * TODO
+	 * @param duration
+	 */
 	public void setDuration(long duration) {
 		this.duration = duration;
 	}
 	
+	/**
+	 * TODO
+	 * @param world
+	 */
 	public void setWorld(World world) {
 		this.world = world;
 	}
 	
+	// Start the event after warnings have finished
 	private void startEvent() {
 		duration = ConfigOption.EVENT_DURATION;
 		endTime = System.currentTimeMillis() + duration;
 	}
 	
+	/**
+	 * TODO
+	 */
 	public void startWarning() {
 		warnings = ConfigOption.EVENT_WARNING_NOTIFICATIONS;
 		warningTime = ConfigOption.EVENT_WARNING_TIME;
-		plugin.getServer().getScheduler().runTaskTimer(plugin, warning, 0L, ApocTools.getTicks(ConfigOption.EVENT_WARNING_TIME));
+		plugin.getServer().getScheduler().runTaskTimer(plugin, warning, 0L, tools.getTicks(ConfigOption.EVENT_WARNING_TIME));
 	}
 	
 }

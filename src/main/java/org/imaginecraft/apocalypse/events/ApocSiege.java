@@ -220,7 +220,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 						bar.setStyle(getBarStyle());
 					}
 				}
-			}.runTaskLater(plugin, ApocTools.getTicks(ConfigOption.SIEGES_SPAWN_INTERVAL) * i);
+			}.runTaskLater(plugin, tools.getTicks(ConfigOption.SIEGES_SPAWN_INTERVAL) * i);
 		}
 	}
 	

@@ -52,13 +52,16 @@ import com.comphenix.protocol.wrappers.ChunkCoordIntPair;
 import com.comphenix.protocol.wrappers.MultiBlockChangeInfo;
 import com.comphenix.protocol.wrappers.WrappedBlockData;
 
+/**
+ * TODO
+ */
 public class ApocTools {
 
-	private static Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
+	private Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
 	
-	private static final String OBC_PREFIX = Bukkit.getServer().getClass().getPackage().getName() + ".";
-	private static final String NMS_PREFIX = OBC_PREFIX.replace("org.bukkit.craftbukkit", "net.minecraft.server");
-	private static final String CUSTOM_PREFIX = OBC_PREFIX.replace("org.bukkit.craftbukkit", "org.imaginecraft.apocalypse.nms");
+	private final static String OBC_PREFIX = Bukkit.getServer().getClass().getPackage().getName() + ".";
+	private final static String NMS_PREFIX = OBC_PREFIX.replace("org.bukkit.craftbukkit", "net.minecraft.server");
+	private final static String CUSTOM_PREFIX = OBC_PREFIX.replace("org.bukkit.craftbukkit", "org.imaginecraft.apocalypse.nms");
 	
 	private final static byte MILLISECONDS_PER_TICK = 50;
 	private final static short MILLISECONDS_PER_SECOND = 1000;
@@ -66,12 +69,16 @@ public class ApocTools {
 	private final static int MILLISECONDS_PER_HOUR = MILLISECONDS_PER_MINUTE * 60;
 	private final static int MILLISECONDS_PER_DAY = MILLISECONDS_PER_HOUR * 24;
 
-	private final static Class<?> nmsEntityCreature = resolveClass(NMS_PREFIX + "EntityCreature"),
+	private final Class<?> cusPathfinderGoalWalkToLocation = resolveClass(CUSTOM_PREFIX + "PathfinderGoalWalkToLocation"),
+			nmsEntityCreature = resolveClass(NMS_PREFIX + "EntityCreature"),
+			nmsEntityHuman = resolveClass(NMS_PREFIX + "EntityHuman"),
+			nmsEntityInsentient = resolveClass(NMS_PREFIX + "EntityInsentient"),
 			nmsEntityLiving = resolveClass(NMS_PREFIX + "EntityLiving"),
 			nmsPathfinderGoal = resolveClass(NMS_PREFIX + "PathfinderGoal"),
-			nmsPathfinderGoalHurtByTarget = resolveClass(NMS_PREFIX + "PathfinderGoalHurtByTarget");
+			nmsPathfinderGoalHurtByTarget = resolveClass(NMS_PREFIX + "PathfinderGoalHurtByTarget"),
+			nmsPathfinderGoalNearestAttackableTarget = resolveClass(NMS_PREFIX + "PathfinderGoalNearestAttackableTarget");
 	
-	private static Map<BlockPosition, PacketContainer> blocks = new HashMap<BlockPosition, PacketContainer>();
+	private Map<BlockPosition, PacketContainer> blocks = new HashMap<BlockPosition, PacketContainer>();
 	
 	private final NMSLib nms = getNMSLib();
 	private final ProtocolManager pm = ProtocolLibrary.getProtocolManager();
@@ -122,7 +129,7 @@ public class ApocTools {
 			PacketContainer packet = pm.createPacket(PacketType.Play.Server.BLOCK_CHANGE, true);
 			packet.getBlockPositionModifier().write(0, bPos);
 			packet.getBlockData().write(0, WrappedBlockData.createData(material, meta));
-			ApocTools.blocks.put(bPos, packet);
+			this.blocks.put(bPos, packet);
 			if (!chunks.containsKey(block.getChunk())) {
 				chunks.put(block.getChunk(), new ArrayList<Block>());
 			}
@@ -166,6 +173,12 @@ public class ApocTools {
 		}
 	}
 	
+	/**
+	 * TODO
+	 * @param team
+	 * @param world
+	 * @return
+	 */
 	public Location findCenterLocation(ApocTeam team, World world) {
 		Location loc = team.getTown();
 		if (loc == null) {
@@ -191,12 +204,22 @@ public class ApocTools {
 		return loc;
 	}
 	
+	/**
+	 * TODO
+	 * @param loc
+	 * @return
+	 */
 	public Location findSpawnLocation(Location loc) {
 		int x = (int) ((random.nextDouble() * ((loc.getX() + ConfigOption.SIEGES_SPAWN_DISTANCE) - (loc.getX() - ConfigOption.SIEGES_SPAWN_DISTANCE))) + loc.getX() - ConfigOption.SIEGES_SPAWN_DISTANCE);
 		int z = (int) ((random.nextDouble() * ((loc.getZ() + ConfigOption.SIEGES_SPAWN_DISTANCE) - (loc.getZ() - ConfigOption.SIEGES_SPAWN_DISTANCE))) + loc.getZ() - ConfigOption.SIEGES_SPAWN_DISTANCE);
 		return loc.getWorld().getHighestBlockAt(x, z).getLocation();
 	}
 	
+	/**
+	 * TODO
+	 * @param clazz
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	public <T> Set<T> getClasses(Class<T> clazz) {
 		Set<T> classes = new HashSet<T>();
@@ -219,7 +242,8 @@ public class ApocTools {
 		return classes;
 	}
 	
-	private static Object getHandle(Object obj) {
+	// Gets the NMS instance of a given Bukkit object. Used for reflection
+	private Object getHandle(Object obj) {
 		try {
 			if (obj instanceof Entity) {
 				return getPrivateField(obj, "entity").get(obj);
@@ -234,16 +258,19 @@ public class ApocTools {
 		return null;
 	}
 	
+	// Gets a version of NMSLib that will work with the currently running version of Minecraft
 	private NMSLib getNMSLib() {
 		try {
 			return (NMSLib) Class.forName(CUSTOM_PREFIX + "NMSLib").newInstance();
 		} catch (Exception e) {
+			// A version of NMSLib for this MC version doesn't exist
 			plugin.getLogger().warning(ChatColor.RED + "NMSLib not found for this version of Bukkit, using reflection instead.");
 			return null;
 		}
 	}
 	
-	private static Field getPrivateField(Object obj, String name) {
+	// Gets a private field while making it accessible
+	private Field getPrivateField(Object obj, String name) {
 		Class<?> check = obj.getClass();
 		do {
 			for (Field field : check.getDeclaredFields()) {
@@ -257,7 +284,8 @@ public class ApocTools {
 		return null;
 	}
 	
-	private static Method getPrivateMethod(Object obj, String name, Class<?>... params) {
+	// Gets a private method while making it accessible
+	private Method getPrivateMethod(Object obj, String name, Class<?>... params) {
 		Class<?> check = obj.getClass();
 		do {
 			for (Method method : check.getDeclaredMethods()) {
@@ -272,11 +300,21 @@ public class ApocTools {
 		return null;
 	}
 	
-	public static long getTicks(long millis) {
+	/**
+	 * Converts real world milliseconds into Minecraft ticks
+	 * @param millis
+	 * @return
+	 */
+	public long getTicks(long millis) {
 		return millis / MILLISECONDS_PER_TICK;
 	}
 	
-	public static String getTime(long millis) {
+	/**
+	 * Creates a reader-friendly string representation of a given amount of milliseconds
+	 * @param millis
+	 * @return
+	 */
+	public String getTime(long millis) {
 		String tmp = "";
 		long time = millis;
 		if (time >= MILLISECONDS_PER_DAY) {
@@ -301,7 +339,8 @@ public class ApocTools {
 		}
 	}
 	
-	private static Class<?> resolveClass(String name) {
+	// Tries to return a specified class if it exists
+	private Class<?> resolveClass(String name) {
 		try {
 			return Class.forName(name);
 		} catch (ClassNotFoundException e) {
@@ -313,25 +352,32 @@ public class ApocTools {
 	/**
 	 * Attempts to make the specified entity aggressive and navigate to the specified location.
 	 * <p>
-	 * Will fail if distance is too great or entity and location are in different worlds.
+	 * Will fail if entity and location are in different worlds.
 	 */
 	public void setAggressive(LivingEntity entity, Location loc) {
 		if (ConfigOption.PLUGIN_USE_REFLECTION
 				|| nms == null) {
 			try {
 				Object nmsEntity = getHandle(entity);
-				nmsEntity.getClass().getMethod("setGoalTarget", nmsEntityLiving).invoke(nmsEntity, (Object)null);
-				Object targetSelector = nmsEntity.getClass().getField("goalSelector").get(nmsEntity);
-				Set<?> targetB = (Set<?>) getPrivateField(targetSelector, "b").get(targetSelector);
-				Set<?> targetC = (Set<?>) getPrivateField(targetSelector, "c").get(targetSelector);
-				targetB.clear();
-				targetC.clear();
-				Method targetMethod = targetSelector.getClass().getMethod("a", int.class, nmsPathfinderGoal);
-				targetMethod.invoke(targetSelector, 1, nmsPathfinderGoalHurtByTarget.getConstructor(nmsEntityCreature, boolean.class, Class[].class)
-						.newInstance(nmsEntity, true, new Class[0]));
-				switch (entity.getType()) {
-					default:
-						// TODO
+				if (nmsEntityCreature.isInstance(nmsEntity)) {
+					nmsEntity.getClass().getMethod("setGoalTarget", nmsEntityLiving).invoke(nmsEntity, (Object)null);
+					Object goalSelector = nmsEntity.getClass().getField("goalSelector").get(nmsEntity);
+					Object targetSelector = nmsEntity.getClass().getField("targetSelector").get(nmsEntity);
+					Set<?> targetB = (Set<?>) getPrivateField(targetSelector, "b").get(targetSelector);
+					Set<?> targetC = (Set<?>) getPrivateField(targetSelector, "c").get(targetSelector);
+					targetB.clear();
+					targetC.clear();
+					Method goalMethod = goalSelector.getClass().getMethod("a", int.class, nmsPathfinderGoal);
+					goalMethod.invoke(goalSelector, 1, cusPathfinderGoalWalkToLocation.getConstructor(nmsEntityInsentient, Location.class, double.class)
+							.newInstance(nmsEntity, loc, 1.0D));
+					Method targetMethod = targetSelector.getClass().getMethod("a", int.class, nmsPathfinderGoal);
+					targetMethod.invoke(targetSelector, 1, nmsPathfinderGoalHurtByTarget.getConstructor(nmsEntityCreature, boolean.class, Class[].class)
+							.newInstance(nmsEntity, true, new Class[0]));
+					switch (entity.getType()) {
+						default:
+							targetMethod.invoke(targetSelector, 2, nmsPathfinderGoalNearestAttackableTarget.getConstructor(nmsEntityCreature, Class.class, boolean.class)
+									.newInstance(nmsEntity, nmsEntityHuman, true));
+					}
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -342,6 +388,12 @@ public class ApocTools {
 		}
 	}
 	
+	/**
+	 * TODO
+	 * @param type
+	 * @param loc
+	 * @return
+	 */
 	public LivingEntity spawnMob(String type, Location loc) {
 		LivingEntity entity = null;
 		EntityType eType = null;
@@ -433,6 +485,10 @@ public class ApocTools {
 		return entity;
 	}
 	
+	/**
+	 * TODO
+	 * @param chunk
+	 */
 	public void updateChunk(Chunk chunk) {
 		if (chunkConst == null) chunkConst = pm.createPacketConstructor(PacketType.Play.Server.MAP_CHUNK, getHandle(chunk), 0);
 		PacketContainer packet = chunkConst.createPacket(getHandle(chunk), 65535);

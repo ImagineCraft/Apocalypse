@@ -15,7 +15,6 @@ import net.minecraft.server.v1_10_R1.PathfinderGoalSelector;
 
 public class NMSLib implements org.imaginecraft.apocalypse.nms.NMSLib {
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void setAggressive(LivingEntity entity, Location loc) {
 		Entity nmsEntity = ((CraftEntity)entity).getHandle();
@@ -32,11 +31,11 @@ public class NMSLib implements org.imaginecraft.apocalypse.nms.NMSLib {
 			}
 			targetB.clear();
 			targetC.clear();
-			handle.goalSelector.a(1, new PathfinderGoalWalkToLocation(handle, loc, 1.0F));
+			handle.goalSelector.a(1, new PathfinderGoalWalkToLocation(handle, loc, 1.0D));
 			handle.targetSelector.a(1, new PathfinderGoalHurtByTarget(handle, true, new Class[0]));
 			switch (entity.getType()) {
 				default:
-					handle.targetSelector.a(2, new PathfinderGoalNearestAttackableTarget(handle, EntityHuman.class, true));
+					handle.targetSelector.a(2, new PathfinderGoalNearestAttackableTarget<EntityHuman>(handle, EntityHuman.class, true));
 					break;
 			}
 		}

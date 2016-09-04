@@ -15,12 +15,16 @@ import org.imaginecraft.apocalypse.Apocalypse;
 import org.imaginecraft.apocalypse.config.ApocConfig;
 import org.imaginecraft.apocalypse.config.ConfigOption;
 import org.imaginecraft.apocalypse.events.ApocBoss;
+import org.imaginecraft.apocalypse.events.ApocChatType;
 import org.imaginecraft.apocalypse.events.ApocEvent;
 import org.imaginecraft.apocalypse.events.ApocSiege;
 import org.imaginecraft.apocalypse.teams.ApocTeam;
 
 import com.google.common.collect.Lists;
 
+/**
+ * TODO
+ */
 public class ApocComExec implements CommandExecutor {
 	
 	private final Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
@@ -33,19 +37,60 @@ public class ApocComExec implements CommandExecutor {
 		event.addTeam(testTeam);		
 	}
 
+	@Override
 	public boolean onCommand(CommandSender sender, Command com, String name, String[] args) {
 		if (args.length > 0) {
-			if (args[0].equalsIgnoreCase("join")) {
+			if (args[0].equalsIgnoreCase("chat")) {
+				if (sender instanceof Player) {
+					Player player = (Player) sender;
+					if (event.getAllPlayers().contains(player)) {
+						if (sender.hasPermission("apocalypse.chat")) {
+							ApocChatType type = event.getChatType(player);
+							if (args.length > 1) {
+								try {
+									type = ApocChatType.valueOf(args[1].toUpperCase());
+								} catch (IllegalArgumentException e) {
+									sender.sendMessage(ChatColor.RED + "Unknown chat type. Choose OFF, PUBLIC, or TEAM.");
+									return true;
+								}
+							}
+							else {
+								switch(type) {
+									case OFF: type = ApocChatType.PUBLIC; break;
+									case PUBLIC: type = ApocChatType.TEAM; break;
+									case TEAM: type = ApocChatType.OFF; break;
+								}
+							}
+							event.setChatType(player, type);
+							sender.sendMessage(ChatColor.GREEN + "Apocalypse chat set to '" + type.toString() + "'.");
+						}
+						else {
+							sender.sendMessage(ChatColor.RED + "You don't have permission to use event chat.");
+						}
+					}
+					else {
+						sender.sendMessage(ChatColor.RED + "You must first join the event to be able to use event chat.");
+					}
+				}
+				else {
+					sender.sendMessage(ChatColor.RED + "This command is only accessible to players.");
+				}
+			}
+			else if (args[0].equalsIgnoreCase("join")) {
 				if (sender instanceof Player) {
 					if (sender.hasPermission("apocalypse.join")) {
 						Player player = (Player) sender;
 						if (event.getAllPlayers().contains(player)) {
+							// Player has already joined event
 							if (args.length > 1) {
+								// Player wishes to switch teams
 								if (ConfigOption.PLAYERS_CAN_SWITCH_TEAMS) {
 									ApocTeam newTeam = ApocTeam.getTeam(args[1]);
 									if (newTeam != null) {
+										// Make sure team is joinable
 										if (newTeam.canJoin()) {
-											if (newTeam.getSize() < ConfigOption.TEAMS_MAXIMUM_MEMBERS) {
+											if (!ConfigOption.TEAMS_ENFORCE_MAXIMUM_MEMBERS
+													|| newTeam.getSize() < ConfigOption.TEAMS_MAXIMUM_MEMBERS) {
 												newTeam.addPlayer(player.getUniqueId());
 												sender.sendMessage(ChatColor.GREEN + "You successfully joined "+ newTeam.getName() + "!");
 											}
@@ -70,7 +115,9 @@ public class ApocComExec implements CommandExecutor {
 							}
 						}
 						else {
+							// Player hasn't joined the event yet
 							if (args.length > 1) {
+								// Player is trying to pick their team
 								if (ConfigOption.PLAYERS_CAN_PICK_TEAM) {
 									ApocTeam team = ApocTeam.getTeam(args[1]);
 									if (team != null) {
@@ -91,6 +138,7 @@ public class ApocComExec implements CommandExecutor {
 								}
 							}
 							else {
+								// Player hasn't picked a team, one will be picked for them
 								ApocTeam team = event.getAvailableTeam();
 								if (team != null) {
 									team.addPlayer(player.getUniqueId());
@@ -118,8 +166,10 @@ public class ApocComExec implements CommandExecutor {
 			else if (args[0].equalsIgnoreCase("setoption")) {
 				if (sender.hasPermission("apocalypse.setoption")) {
 					if (args.length > 1) {
+						// Sender either wants info on an option or wants to change one
 						if (config.getOptions().keySet().contains(args[1])) {
 							if (args.length > 2) {
+								// Sender intends to change an option
 								Object value = config.getValue(args[1]);
 								Object newValue = null;
 								if (value instanceof Boolean) {
@@ -153,6 +203,7 @@ public class ApocComExec implements CommandExecutor {
 									config.setValue(args[1], newValue);
 									sender.sendMessage(ChatColor.GREEN + "Successfully set " + ChatColor.RESET + args[1] + ChatColor.GREEN + " to value " + ChatColor.WHITE + newValue.toString());
 								}
+								// New value couldn't be parsed for whatever reason
 								else {
 									sender.sendMessage(ChatColor.RED + "Failed to set option to the specified value.");
 								}
@@ -168,6 +219,7 @@ public class ApocComExec implements CommandExecutor {
 						}
 					}
 					else {
+						// Show sender list of all available options
 						sender.sendMessage(ChatColor.UNDERLINE + "Current options:");
 						List<String> options = Lists.newArrayList(config.getOptions().keySet());
 						Collections.sort(options);

@@ -20,6 +20,9 @@ permissions:
             apocalypse.setworld: true
             apocalypse.testboss: true
             apocalypse.testsiege: true
+    apocalypse.chat:
+        description: Allows user to toggle event chat.
+        default: true
     apocalypse.join:
         description: Allows user to join an Apocalypse event.
         default: true
