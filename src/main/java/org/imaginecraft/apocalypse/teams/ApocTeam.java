@@ -19,7 +19,7 @@ import org.imaginecraft.apocalypse.events.ApocEvent;
 
 public class ApocTeam implements ConfigurationSerializable {
 
-	private static final Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
+	private final static Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
 	
 	private ApocEvent event = plugin.getApocConfig().getEvent();
 	

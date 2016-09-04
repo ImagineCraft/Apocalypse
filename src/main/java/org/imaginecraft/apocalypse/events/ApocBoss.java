@@ -40,7 +40,7 @@ import org.imaginecraft.apocalypse.tools.ApocTools;
 
 public class ApocBoss implements ConfigurationSerializable, Listener {
 	
-	private static Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
+	private final static Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
 	
 	private Map<EquipmentSlot, ItemStack> equipment = new EnumMap<EquipmentSlot, ItemStack>(EquipmentSlot.class);
 	private Map<DamageCause, Double> resistances = new EnumMap<DamageCause, Double>(DamageCause.class);

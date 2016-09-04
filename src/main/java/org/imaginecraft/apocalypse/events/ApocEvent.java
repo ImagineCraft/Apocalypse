@@ -28,7 +28,7 @@ import org.imaginecraft.apocalypse.tools.ApocTools;
  */
 public class ApocEvent {
 	
-	private Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
+	private final Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
 	private final ApocTools tools = plugin.getApocTools();
 	
 	private Map<UUID, ApocChatType> inChat = new HashMap<UUID, ApocChatType>();

@@ -57,7 +57,7 @@ import com.comphenix.protocol.wrappers.WrappedBlockData;
  */
 public class ApocTools {
 
-	private Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
+	private final Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
 	
 	private final static String OBC_PREFIX = Bukkit.getServer().getClass().getPackage().getName() + ".";
 	private final static String NMS_PREFIX = OBC_PREFIX.replace("org.bukkit.craftbukkit", "net.minecraft.server");
