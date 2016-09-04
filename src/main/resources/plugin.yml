@@ -18,6 +18,7 @@ permissions:
             apocalypse.setoption: true
             apocalypse.settown: true
             apocalypse.setworld: true
+            apocalypse.start: true
             apocalypse.testboss: true
             apocalypse.testsiege: true
     apocalypse.chat:
