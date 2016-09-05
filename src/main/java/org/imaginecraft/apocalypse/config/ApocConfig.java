@@ -85,15 +85,6 @@ public class ApocConfig {
 		// Load event configuration file
 		eventConfig = YamlConfiguration.loadConfiguration(eventFile);
 		event = (ApocEvent) eventConfig.get("event", new ApocEvent());
-//		if (eventConfig.contains("world")) {
-//			event.setWorld(plugin.getServer().getWorld(UUID.fromString(config.getString("world"))));
-//		}
-//		if (eventConfig.contains("teams")) {
-//			for (String string : eventConfig.getConfigurationSection("teams").getKeys(false)) {
-//				ApocTeam team = (ApocTeam) eventConfig.get("teams." + string);
-//				event.addTeam(team);
-//			}
-//		}
 		siegeConfig = YamlConfiguration.loadConfiguration(siegeFile);
 		if (siegeConfig.contains("bosses")) {
 			for (String name : siegeConfig.getConfigurationSection("bosses").getKeys(false)) {
@@ -126,10 +117,6 @@ public class ApocConfig {
 	public void save() {
 		eventConfig = new YamlConfiguration();
 		eventConfig.set("event", event);
-//		if (event.getWorld() != null) eventConfig.set("world", event.getWorld().getUID().toString());
-//		for (ApocTeam team : event.getTeams()) {
-//			eventConfig.set("teams." + team.getName(), team);
-//		}
 		siegeConfig = new YamlConfiguration();
 		for (ApocBoss boss : bosses) {
 			String name = boss.getName().replaceAll(" ", "_");
