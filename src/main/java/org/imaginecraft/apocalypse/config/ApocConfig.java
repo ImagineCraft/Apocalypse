@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
@@ -46,9 +45,9 @@ public class ApocConfig {
 	public ApocConfig() {
 		// Make bosses, sieges, and teams serializable
 		ConfigurationSerialization.registerClass(ApocBoss.class, "ApocBoss");
+		ConfigurationSerialization.registerClass(ApocEvent.class, "ApocEvent");
 		ConfigurationSerialization.registerClass(ApocSiege.class, "ApocSiege");
 		ConfigurationSerialization.registerClass(ApocTeam.class, "ApocTeam");
-		event = new ApocEvent();
 	}
 	
 	/**
@@ -85,16 +84,16 @@ public class ApocConfig {
 		}
 		// Load event configuration file
 		eventConfig = YamlConfiguration.loadConfiguration(eventFile);
-		if (eventConfig.contains("world")) {
-			event.setWorld(plugin.getServer().getWorld(UUID.fromString(config.getString("world"))));
-		}
-		if (eventConfig.contains("teams")) {
-			for (String string : eventConfig.getConfigurationSection("teams").getKeys(false)) {
-				ApocTeam team = (ApocTeam) eventConfig.get("teams." + string);
-				event.addTeam(team);
-			}
-		}
-		// TODO
+		event = (ApocEvent) eventConfig.get("event", new ApocEvent());
+//		if (eventConfig.contains("world")) {
+//			event.setWorld(plugin.getServer().getWorld(UUID.fromString(config.getString("world"))));
+//		}
+//		if (eventConfig.contains("teams")) {
+//			for (String string : eventConfig.getConfigurationSection("teams").getKeys(false)) {
+//				ApocTeam team = (ApocTeam) eventConfig.get("teams." + string);
+//				event.addTeam(team);
+//			}
+//		}
 		siegeConfig = YamlConfiguration.loadConfiguration(siegeFile);
 		if (siegeConfig.contains("bosses")) {
 			for (String name : siegeConfig.getConfigurationSection("bosses").getKeys(false)) {
@@ -126,10 +125,11 @@ public class ApocConfig {
 	 */
 	public void save() {
 		eventConfig = new YamlConfiguration();
-		if (event.getWorld() != null) eventConfig.set("world", event.getWorld().getUID().toString());
-		for (ApocTeam team : event.getTeams()) {
-			eventConfig.set("teams." + team.getName(), team);
-		}
+		eventConfig.set("event", event);
+//		if (event.getWorld() != null) eventConfig.set("world", event.getWorld().getUID().toString());
+//		for (ApocTeam team : event.getTeams()) {
+//			eventConfig.set("teams." + team.getName(), team);
+//		}
 		siegeConfig = new YamlConfiguration();
 		for (ApocBoss boss : bosses) {
 			String name = boss.getName().replaceAll(" ", "_");

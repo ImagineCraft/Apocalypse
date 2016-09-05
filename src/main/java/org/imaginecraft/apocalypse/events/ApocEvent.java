@@ -4,14 +4,17 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -26,7 +29,7 @@ import org.imaginecraft.apocalypse.tools.ApocTools;
 /**
  * Instance of the queued or currently active event.
  */
-public class ApocEvent {
+public class ApocEvent implements ConfigurationSerializable {
 	
 	private final Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
 	private final ApocTools tools = plugin.getApocTools();
@@ -220,6 +223,13 @@ public class ApocEvent {
 	/**
 	 * TODO
 	 */
+	public void setActive(boolean active) {
+		this.active = active;
+	}
+	
+	/**
+	 * TODO
+	 */
 	public void setChatType(OfflinePlayer player, ApocChatType type) {
 		inChat.put(player.getUniqueId(), type);
 	}
@@ -234,6 +244,13 @@ public class ApocEvent {
 	
 	/**
 	 * TODO
+	 */
+	public void setEndTime(long endTime) {
+		this.endTime = endTime;
+	}
+	
+	/**
+	 * TODO
 	 * @param world
 	 */
 	public void setWorld(World world) {
@@ -244,6 +261,7 @@ public class ApocEvent {
 	private void startEvent() {
 		duration = ConfigOption.EVENT_DURATION;
 		endTime = System.currentTimeMillis() + duration;
+		// TODO
 	}
 	
 	/**
@@ -253,6 +271,30 @@ public class ApocEvent {
 		warnings = ConfigOption.EVENT_WARNING_NOTIFICATIONS;
 		warningTime = ConfigOption.EVENT_WARNING_TIME;
 		plugin.getServer().getScheduler().runTaskTimer(plugin, warning, 0L, tools.getTicks(ConfigOption.EVENT_WARNING_TIME));
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static ApocEvent deserialize(Map<String, Object> args) {
+		ApocEvent event = new ApocEvent();
+		event.setActive((boolean) args.get("active"));
+		event.setEndTime((int)args.get("end-time"));
+		if (args.containsKey("world")) event.setWorld(Bukkit.getServer().getWorld(UUID.fromString((String) args.get("world"))));
+		if (args.containsKey("teams")) {
+			for (ApocTeam team : (Set<ApocTeam>) args.get("teams")) {
+				event.addTeam(team);
+			}
+		}
+		return event;
+	}
+
+	@Override
+	public Map<String, Object> serialize() {
+		Map<String, Object> result = new LinkedHashMap<String, Object>();
+		result.put("active", active);
+		result.put("end-time", endTime);
+		if (world != null) result.put("world", world.getUID().toString());
+		if (!teams.isEmpty()) result.put("teams", teams);
+		return result;
 	}
 	
 }
