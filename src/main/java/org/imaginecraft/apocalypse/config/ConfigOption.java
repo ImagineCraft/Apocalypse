@@ -114,6 +114,9 @@ public class ConfigOption {
 	@ConfigDesc(path = "teams.enforce-maximum-members", desc = "Whether teams can only support up to the number of players specified by teams.maximum-members.")
 	public static boolean TEAMS_ENFORCE_MAXIMUM_MEMBERS = ApocConfig.config.getBoolean("teams.enforce-maximum-members", false);
 	
+	@ConfigDesc(path = "teams.leader-can-remove-team", desc = "Whether team's leader can remove their team from the event.")
+	public static boolean TEAMS_LEADER_CAN_REMOVE_TEAM = ApocConfig.config.getBoolean("teams.leader-can-remove-team", true);
+	
 	@ConfigDesc(path = "teams.maximum-members", desc = "Maximum number of players that can be on a given team.")
 	public static int TEAMS_MAXIMUM_MEMBERS = ApocConfig.config.getInt("teams.maximum-members", 10);
 	

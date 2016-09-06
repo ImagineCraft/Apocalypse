@@ -2,6 +2,7 @@ package org.imaginecraft.apocalypse.commands;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -40,7 +41,41 @@ public class ApocComExec implements CommandExecutor {
 	@Override
 	public boolean onCommand(CommandSender sender, Command com, String name, String[] args) {
 		if (args.length > 0) {
-			if (args[0].equalsIgnoreCase("chat")) {
+			if (args[0].equalsIgnoreCase("addteam")) {
+				if (sender.hasPermission("apocalypse.addteam")) {
+					if (args.length > 1) {
+						ApocTeam team = ApocTeam.getTeam(args[1]);
+						if (team == null) {
+							UUID leader = null;
+							if (sender instanceof Player) {
+								if (ApocTeam.getPlayerTeam((Player)sender) == null) {
+									leader = ((Player) sender).getUniqueId();
+								}
+								else {
+									sender.sendMessage(ChatColor.RED + "You must leave your current team before making a new one.");
+									return true;
+								}
+							}
+							team = event.createTeam(args[1]);
+							if (leader != null) {
+								team.addPlayer(leader);
+								team.setLeader(leader);
+							}
+							sender.sendMessage(ChatColor.GREEN + "Successfully created team " + team.getColor() + team.getName() + ChatColor.GREEN + "!");
+						}
+						else {
+							sender.sendMessage(ChatColor.RED + "Team " + team.getColor() + team.getName() + ChatColor.RED + " already exists.");
+						}
+					}
+					else {
+						sender.sendMessage(ChatColor.RED + "You must specify the name of the new team.");
+					}
+				}
+				else {
+					sender.sendMessage(ChatColor.RED + "You don't have permission to add teams.");
+				}
+			}
+			else if (args[0].equalsIgnoreCase("chat")) {
 				if (sender instanceof Player) {
 					Player player = (Player) sender;
 					if (event.getAllPlayers().contains(player)) {
@@ -161,6 +196,47 @@ public class ApocComExec implements CommandExecutor {
 			else if (args[0].equalsIgnoreCase("leave")) {
 				if (sender.hasPermission("apocalypse.leave")) {
 					// TODO
+				}
+			}
+			else if (args[0].equalsIgnoreCase("removeteam")) {
+				if (sender.hasPermission("apocalypse.removeteam")) {
+					// Sender can remove any team
+					if (args.length > 1) {
+						ApocTeam team = ApocTeam.getTeam(args[1]);
+						if (team != null) {
+							event.removeTeam(team);
+							sender.sendMessage(ChatColor.GREEN + "Team " + team.getColor() + team.getName() + ChatColor.GREEN + "has been removed.");
+						}
+						else {
+							sender.sendMessage(ChatColor.RED + "Team '" + args[1] + "' does not exist.");
+						}
+					}
+					else {
+						sender.sendMessage(ChatColor.RED + "You must specify the team to remove.");
+					}
+				}
+				else if (sender instanceof Player
+						&& ConfigOption.TEAMS_LEADER_CAN_REMOVE_TEAM) {
+					// Player can only remove their own team
+					Player player = (Player) sender;
+					ApocTeam team = ApocTeam.getPlayerTeam(player);
+					if (team != null) {
+						if (team.getLeader() == player) {
+							event.removeTeam(team);
+							sender.sendMessage(ChatColor.GREEN + "Team " + team.getColor() + team.getName() + ChatColor.GREEN + "has been removed.");
+						}
+						else {
+							// Player isn't the team's leader
+							sender.sendMessage(ChatColor.RED + "Only the team leader can remove their team.");
+						}
+					}
+					else {
+						// Player isn't on a team
+						sender.sendMessage(ChatColor.RED + "You aren't on a team.");
+					}
+				}
+				else {
+					sender.sendMessage(ChatColor.RED + "You do not have permission to remove teams.");
 				}
 			}
 			else if (args[0].equalsIgnoreCase("setoption")) {

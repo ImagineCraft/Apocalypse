@@ -23,13 +23,14 @@ public class ApocTeam implements ConfigurationSerializable {
 	
 	private ApocEvent event = plugin.getApocConfig().getEvent();
 	
+	private final Map<UUID, Integer> scores = new HashMap<UUID, Integer>();
+	
 	private boolean canJoin = true;
+	private ChatColor color;
+	private UUID leader = null;
+	private final String name;
 	private Team team;
 	private Location spawn, town;
-	
-	private final Map<UUID, Integer> scores = new HashMap<UUID, Integer>();
-	private ChatColor color;
-	private final String name;
 	
 	public ApocTeam(ChatColor color, String name) {
 		this.name = name;
@@ -64,6 +65,10 @@ public class ApocTeam implements ConfigurationSerializable {
 	
 	public ChatColor getColor() {
 		return color;
+	}
+	
+	public OfflinePlayer getLeader() {
+		return leader != null ? plugin.getServer().getOfflinePlayer(leader) : null;
 	}
 	
 	public String getName() {
@@ -103,6 +108,9 @@ public class ApocTeam implements ConfigurationSerializable {
 	}
 	
 	public static ApocTeam getTeam(String name) {
+		if (name.startsWith("&") || name.startsWith(String.valueOf(ChatColor.COLOR_CHAR))) {
+			name = name.substring(2);
+		}
 		for (ApocTeam team : plugin.getApocConfig().getEvent().getTeams()) {
 			if (team.getName().equalsIgnoreCase(name)) {
 				return team;
@@ -138,6 +146,10 @@ public class ApocTeam implements ConfigurationSerializable {
 		team.setPrefix(color.toString());
 	}
 	
+	public void setLeader(UUID uuid) {
+		leader = uuid;
+	}
+	
 	public void setSpawn(Location loc) {
 		spawn = loc;
 	}
@@ -145,12 +157,30 @@ public class ApocTeam implements ConfigurationSerializable {
 	public void setTown(Location loc) {
 		town = loc;
 	}
+	
+	@SuppressWarnings("unchecked")
+	public static ApocTeam deserialize(Map<String, Object> args) {
+		String name = (String) args.get("name");
+		ChatColor color = ChatColor.valueOf((String) args.get("color"));
+		ApocTeam team = new ApocTeam(color, name);
+		if (args.containsKey("leader")) team.setLeader(UUID.fromString((String) args.get("leader")));
+		if (args.containsKey("spawn")) team.setSpawn((Location) args.get("spawn"));
+		if (args.containsKey("town")) team.setTown((Location) args.get("town"));
+		if (args.containsKey("scores")) {
+			Map<String, Integer> scoreMap = (LinkedHashMap<String, Integer>) args.get("scores");
+			for (String uuid : scoreMap.keySet()) {
+				team.addPlayer(UUID.fromString(uuid), scoreMap.get(uuid));
+			}
+		}
+		return team;
+	}
 
 	@Override
 	public Map<String, Object> serialize() {
 		Map<String, Object> result = new LinkedHashMap<String, Object>();
 		result.put("name", name);
 		result.put("color", color.toString());
+		if (leader != null) result.put("leader", leader.toString());
 		if (spawn != null) result.put("spawn", spawn);
 		if (town != null) result.put("town", town);
 		if (!scores.isEmpty()) {

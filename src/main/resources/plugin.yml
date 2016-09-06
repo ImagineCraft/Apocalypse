@@ -15,12 +15,16 @@ permissions:
         description: Gives user complete control of the Apocalypse plugin.
         default: op
         children:
+            apocalypse.removeteam: true
             apocalypse.setoption: true
             apocalypse.settown: true
             apocalypse.setworld: true
             apocalypse.start: true
             apocalypse.testboss: true
             apocalypse.testsiege: true
+    apocalypse.addteam:
+        description: Allows user to add teams to the event.
+        default: true
     apocalypse.chat:
         description: Allows user to toggle event chat.
         default: true
@@ -30,6 +34,9 @@ permissions:
     apocalypse.leave:
         description: Allows user to leave an Apocalypse event.
         default: true
+    apocalypse.removeteam:
+        description: Allows user to remove teams from the event.
+        default: false
     apocalypse.setoption:
         description: Allows user to view and modify plugin configuration options.
         default: false

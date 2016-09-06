@@ -216,7 +216,11 @@ public class ApocEvent implements ConfigurationSerializable {
 	 * @param team
 	 */
 	public void removeTeam(ApocTeam team) {
+		for (OfflinePlayer player : team.getPlayers()) {
+			inChat.remove(player.getUniqueId());
+		}
 		team.remove();
+		colors.add(team.getColor());
 		teams.remove(team);
 	}
 	
