@@ -24,13 +24,6 @@ public interface NMSLib {
 	public default Object getHandle(Object obj) {
 		try {
 			return getPrivateMethod(obj.getClass(), "getHandle").invoke(obj);
-//			if (obj instanceof Entity) {
-//				return getPrivateField(obj.getClass(), "entity").get(obj);
-//			}
-//			else if (obj instanceof Chunk
-//					|| obj instanceof World) {
-//				return getPrivateMethod(obj.getClass(), "getHandle").invoke(obj);
-//			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
