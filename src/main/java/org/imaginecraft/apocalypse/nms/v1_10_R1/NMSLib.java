@@ -23,8 +23,8 @@ public class NMSLib implements org.imaginecraft.apocalypse.nms.NMSLib {
 			handle.setGoalTarget(null);
 			Set<?> targetB, targetC;
 			try {
-				targetB = (Set<?>) getPrivateField("b", PathfinderGoalSelector.class).get(handle.targetSelector);
-				targetC = (Set<?>) getPrivateField("c", PathfinderGoalSelector.class).get(handle.targetSelector);
+				targetB = (Set<?>) getPrivateField(PathfinderGoalSelector.class, "b").get(handle.targetSelector);
+				targetC = (Set<?>) getPrivateField(PathfinderGoalSelector.class, "c").get(handle.targetSelector);
 			} catch (Exception e) {
 				e.printStackTrace();
 				return;
