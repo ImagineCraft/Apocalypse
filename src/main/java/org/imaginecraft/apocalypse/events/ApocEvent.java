@@ -46,14 +46,9 @@ public class ApocEvent implements ConfigurationSerializable {
 	private boolean active = false;
 	private long duration = 0L, endTime = 0L, warningTime = 0L;
 	private int warnings = 0;
-	private final Objective objective;
-	private final Scoreboard scoreboard;
+	private Objective objective;
+	private Scoreboard scoreboard;
 	private World world;
-	
-	public ApocEvent() {
-		scoreboard = plugin.getServer().getScoreboardManager().getNewScoreboard();
-		objective = scoreboard.registerNewObjective("Points", "dummy");
-	}
 	
 	private Runnable warning = new BukkitRunnable() {
 		int i = warnings;
@@ -86,6 +81,7 @@ public class ApocEvent implements ConfigurationSerializable {
 	 */
 	public void addTeam(ApocTeam team) {
 		teams.add(team);
+		team.setScoreboardTeam(scoreboard.registerNewTeam(team.getName()));
 	}
 	
 	/**
@@ -108,7 +104,7 @@ public class ApocEvent implements ConfigurationSerializable {
 			}
 		}
 		ApocTeam team = new ApocTeam(color != null ? color : getAvailableTeamColor(), name);
-		teams.add(team);
+		addTeam(team);
 		return team;
 	}
 	
@@ -205,6 +201,14 @@ public class ApocEvent implements ConfigurationSerializable {
 	
 	/**
 	 * TODO
+	 */
+	public void initScoreboard() {
+		scoreboard = plugin.getServer().getScoreboardManager().getNewScoreboard();
+		objective = scoreboard.registerNewObjective("Points", "dummy");
+	}
+	
+	/**
+	 * TODO
 	 * @return
 	 */
 	public boolean isActive() {
@@ -277,17 +281,11 @@ public class ApocEvent implements ConfigurationSerializable {
 		plugin.getServer().getScheduler().runTaskTimer(plugin, warning, 0L, tools.getTicks(ConfigOption.EVENT_WARNING_TIME));
 	}
 	
-	@SuppressWarnings("unchecked")
 	public static ApocEvent deserialize(Map<String, Object> args) {
 		ApocEvent event = new ApocEvent();
 		event.setActive((boolean) args.get("active"));
 		event.setEndTime((int)args.get("end-time"));
 		if (args.containsKey("world")) event.setWorld(Bukkit.getServer().getWorld(UUID.fromString((String) args.get("world"))));
-		if (args.containsKey("teams")) {
-			for (ApocTeam team : (Set<ApocTeam>) args.get("teams")) {
-				event.addTeam(team);
-			}
-		}
 		return event;
 	}
 
@@ -297,7 +295,7 @@ public class ApocEvent implements ConfigurationSerializable {
 		result.put("active", active);
 		result.put("end-time", endTime);
 		if (world != null) result.put("world", world.getUID().toString());
-		if (!teams.isEmpty()) result.put("teams", teams);
+//		if (!teams.isEmpty()) result.put("teams", teams);
 		return result;
 	}
 	

@@ -29,13 +29,12 @@ public class ApocTeam implements ConfigurationSerializable {
 	private ChatColor color;
 	private UUID leader = null;
 	private final String name;
-	private Team team;
+	private Team sbTeam;
 	private Location spawn, town;
 	
 	public ApocTeam(ChatColor color, String name) {
+		this.color = color;
 		this.name = name;
-		team = event.getScoreboard().registerNewTeam(name);
-		setColor(color);
 	}
 	
 	public void addPlayer(UUID uuid) {
@@ -44,7 +43,7 @@ public class ApocTeam implements ConfigurationSerializable {
 	
 	private void addPlayer(OfflinePlayer player, int score) {
 		scores.put(player.getUniqueId(), score);
-		team.addEntry(player.getName());
+		sbTeam.addEntry(player.getName());
 		event.getObjective().getScore(player.getName()).setScore(score);
 	}
 	
@@ -92,7 +91,7 @@ public class ApocTeam implements ConfigurationSerializable {
 	}
 	
 	public Team getScoreboardTeam() {
-		return team;
+		return sbTeam;
 	}
 	
 	public int getSize() {
@@ -133,7 +132,7 @@ public class ApocTeam implements ConfigurationSerializable {
 	}
 	
 	public void remove() {
-		team.unregister();
+		sbTeam.unregister();
 		scores.clear();
 	}
 	
@@ -143,11 +142,15 @@ public class ApocTeam implements ConfigurationSerializable {
 	
 	public void setColor(ChatColor color) {
 		this.color = color;
-		team.setPrefix(color.toString());
 	}
 	
 	public void setLeader(UUID uuid) {
 		leader = uuid;
+	}
+	
+	public void setScoreboardTeam(Team team) {
+		this.sbTeam = team;
+		sbTeam.setPrefix(color.toString());
 	}
 	
 	public void setSpawn(Location loc) {
@@ -161,7 +164,7 @@ public class ApocTeam implements ConfigurationSerializable {
 	@SuppressWarnings("unchecked")
 	public static ApocTeam deserialize(Map<String, Object> args) {
 		String name = (String) args.get("name");
-		ChatColor color = ChatColor.valueOf((String) args.get("color"));
+		ChatColor color = ChatColor.getByChar((String)args.get("color"));
 		ApocTeam team = new ApocTeam(color, name);
 		if (args.containsKey("leader")) team.setLeader(UUID.fromString((String) args.get("leader")));
 		if (args.containsKey("spawn")) team.setSpawn((Location) args.get("spawn"));
@@ -179,7 +182,7 @@ public class ApocTeam implements ConfigurationSerializable {
 	public Map<String, Object> serialize() {
 		Map<String, Object> result = new LinkedHashMap<String, Object>();
 		result.put("name", name);
-		result.put("color", color.toString());
+		result.put("color", color.getChar());
 		if (leader != null) result.put("leader", leader.toString());
 		if (spawn != null) result.put("spawn", spawn);
 		if (town != null) result.put("town", town);

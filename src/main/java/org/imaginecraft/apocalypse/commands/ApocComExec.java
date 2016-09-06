@@ -35,7 +35,7 @@ public class ApocComExec implements CommandExecutor {
 	
 	public ApocComExec() {
 		testTeam.setCanJoin(false);
-		event.addTeam(testTeam);		
+		event.addTeam(testTeam);
 	}
 
 	@Override
