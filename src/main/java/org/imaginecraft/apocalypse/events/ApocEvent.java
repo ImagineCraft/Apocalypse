@@ -12,12 +12,14 @@ import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 
@@ -35,6 +37,9 @@ public class ApocEvent implements ConfigurationSerializable {
 	private final ApocTools tools = plugin.getApocTools();
 	
 	private Map<UUID, ApocChatType> inChat = new HashMap<UUID, ApocChatType>();
+	
+	private Set<ApocBoss> bosses = new HashSet<ApocBoss>();
+	private Set<ApocSiege> sieges = new HashSet<ApocSiege>();
 	private Set<ApocTeam> teams = new HashSet<ApocTeam>();
 	
 	private final EnumSet<ChatColor> colors = EnumSet.of(ChatColor.AQUA, ChatColor.BLUE, ChatColor.DARK_AQUA, ChatColor.DARK_BLUE,
@@ -46,34 +51,31 @@ public class ApocEvent implements ConfigurationSerializable {
 	private boolean active = false;
 	private long duration = 0L, endTime = 0L, warningTime = 0L;
 	private int warnings = 0;
-	private Objective objective;
 	private Scoreboard scoreboard;
+	private Objective objective;
 	private World world;
 	
-	private Runnable warning = new BukkitRunnable() {
-		int i = warnings;
-		@Override
-		public void run() {
-			long wTime = (i / warnings) * warningTime;
-			if (i > 0) {
-				for (OfflinePlayer player : getAllPlayers()) {
-					if (player.isOnline()) {
-						((Player) player).sendMessage(ChatColor.GOLD + "The Apocalypse will begin in " + tools.getTime(wTime) + ".");
-					}
-				}
-				i --;
-			}
-			else {
-				for (OfflinePlayer player : getAllPlayers()) {
-					if (player.isOnline()) {
-						((Player) player).sendMessage(ChatColor.GOLD + "The Apocalypse has begun!");
-					}
-				}
-				startEvent();
-				this.cancel();
-			}
-		}
-	};
+	public ApocEvent() {
+		scoreboard = plugin.getServer().getScoreboardManager().getNewScoreboard();
+		objective = scoreboard.registerNewObjective("Points", "dummy");
+		objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+	}
+	
+	/**
+	 * TODO
+	 * @param boss
+	 */
+	public void addBoss(ApocBoss boss) {
+		bosses.add(boss);
+	}
+	
+	/**
+	 * TODO
+	 * @param siege
+	 */
+	public void addSiege(ApocSiege siege) {
+		sieges.add(siege);
+	}
 	
 	/**
 	 * TODO
@@ -81,7 +83,26 @@ public class ApocEvent implements ConfigurationSerializable {
 	 */
 	public void addTeam(ApocTeam team) {
 		teams.add(team);
-		team.setScoreboardTeam(scoreboard.registerNewTeam(team.getName()));
+	}
+	
+	private void createSpawns() {
+		double min = ConfigOption.TEAMS_MINIMUM_SPAWNING_DISTANCE,
+				range = Math.min(ConfigOption.TEAMS_MAXIMUM_SPAWNING_DISTANCE, world.getWorldBorder().getSize());
+		Location center = world.getHighestBlockAt(world.getWorldBorder().getCenter()).getLocation();
+		for (ApocTeam team1 : teams) {
+			for (ApocTeam team2 : teams) {
+				if (!team1.getName().equalsIgnoreCase("test")
+						&& !team2.getName().equalsIgnoreCase("test")) {
+					team1.setSpawn(tools.getRandomLocation(center, range));
+					if (team2.getSpawn() != null
+							&& team1 != team2) {
+						while (team1.getSpawn().distanceSquared(team2.getSpawn()) < min * min) {
+							team1.setSpawn(tools.getRandomLocation(center, range));
+						}
+					}
+				}
+			}
+		}
 	}
 	
 	/**
@@ -151,6 +172,26 @@ public class ApocEvent implements ConfigurationSerializable {
 	
 	/**
 	 * TODO
+	 * @param name
+	 * @return
+	 */
+	public ApocBoss getBoss(String name) {
+		for (ApocBoss boss : bosses) {
+			if (boss.getName().equalsIgnoreCase(name)) return boss;
+		}
+		return null;
+	}
+	
+	/**
+	 * TODO
+	 * @return
+	 */
+	public Set<ApocBoss> getBosses() {
+		return bosses;
+	}
+	
+	/**
+	 * TODO
 	 * @return
 	 */
 	public long getEndTime() {
@@ -167,10 +208,62 @@ public class ApocEvent implements ConfigurationSerializable {
 	
 	/**
 	 * TODO
+	 */
+	public ApocTeam getPlayerTeam(OfflinePlayer player) {
+		for (ApocTeam team : teams) {
+			if (team.hasPlayer(player.getUniqueId())) {
+				return team;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * TODO
 	 * @return
 	 */
 	public Scoreboard getScoreboard() {
+		if (scoreboard == null) {
+			scoreboard = plugin.getServer().getScoreboardManager().getNewScoreboard();
+		}
 		return scoreboard;
+	}
+	
+	/**
+	 * TODO
+	 * @param name
+	 * @return
+	 */
+	public ApocSiege getSiege(String name) {
+		for (ApocSiege siege : sieges) {
+			if (siege.getName().equalsIgnoreCase(name)) return siege;
+		}
+		return null;
+	}
+	
+	/**
+	 * TODO
+	 * @return
+	 */
+	public Set<ApocSiege> getSieges() {
+		return sieges;
+	}
+	
+	/**
+	 * TODO
+	 * @param name
+	 * @return
+	 */
+	public ApocTeam getTeam(String name) {
+		if (name.startsWith("&") || name.startsWith(String.valueOf(ChatColor.COLOR_CHAR))) {
+			name = name.substring(2);
+		}
+		for (ApocTeam team : teams) {
+			if (team.getName().equalsIgnoreCase(name)) {
+				return team;
+			}
+		}
+		return null;
 	}
 	
 	/**
@@ -197,14 +290,6 @@ public class ApocEvent implements ConfigurationSerializable {
 			inChat.put(player.getUniqueId(), ApocChatType.OFF);
 		}
 		return inChat.get(player.getUniqueId());
-	}
-	
-	/**
-	 * TODO
-	 */
-	public void initScoreboard() {
-		scoreboard = plugin.getServer().getScoreboardManager().getNewScoreboard();
-		objective = scoreboard.registerNewObjective("Points", "dummy");
 	}
 	
 	/**
@@ -267,8 +352,18 @@ public class ApocEvent implements ConfigurationSerializable {
 	
 	// Start the event after warnings have finished
 	private void startEvent() {
+		active = true;
 		duration = ConfigOption.EVENT_DURATION;
 		endTime = System.currentTimeMillis() + duration;
+		createSpawns();
+		for (ApocTeam team : teams) {
+			for (OfflinePlayer player : team.getPlayers()) {
+				if (player.isOnline()) {
+					((Player)player).teleport(team.getSpawn());
+					((Player)player).setScoreboard(scoreboard);
+				}
+			}
+		}
 		// TODO
 	}
 	
@@ -278,7 +373,31 @@ public class ApocEvent implements ConfigurationSerializable {
 	public void startWarning() {
 		warnings = ConfigOption.EVENT_WARNING_NOTIFICATIONS;
 		warningTime = ConfigOption.EVENT_WARNING_TIME;
-		plugin.getServer().getScheduler().runTaskTimer(plugin, warning, 0L, tools.getTicks(ConfigOption.EVENT_WARNING_TIME));
+		for (int i = 0; i <= warnings; i ++) {
+			double dbl1 = (double)i / (double)warnings;
+			double dbl2 = dbl1 * (double)warningTime;
+			long wTime = (long) dbl2;
+			new BukkitRunnable() {
+				@Override
+				public void run() {
+					if (wTime > 0L) {
+						for (OfflinePlayer player : getAllPlayers()) {
+							if (player.isOnline()) {
+								((Player) player).sendMessage(ChatColor.GOLD + "The Apocalypse will begin in " + tools.getTime(wTime) + ".");
+							}
+						}
+					}
+					else {
+						for (OfflinePlayer player : getAllPlayers()) {
+							if (player.isOnline()) {
+								((Player) player).sendMessage(ChatColor.GOLD + "The Apocalypse has begun!");
+							}
+						}
+						startEvent();
+					}
+				}
+			}.runTaskLater(plugin, tools.getTicks(warningTime - wTime));
+		}
 	}
 	
 	public static ApocEvent deserialize(Map<String, Object> args) {

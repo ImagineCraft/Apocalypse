@@ -11,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -31,11 +32,11 @@ public class ApocListener implements Listener {
 			ChatColor chatColor = ChatColor.WHITE;
 			String message = event.getMessage();
 			Set<OfflinePlayer> recipients = new HashSet<OfflinePlayer>();
-			ChatColor teamColor = ApocTeam.getPlayerTeam(player).getColor();
+			ChatColor teamColor = aEvent.getPlayerTeam(player).getColor();
 			switch (aEvent.getChatType(player)) {
 				case OFF: return;
 				case PUBLIC: recipients = aEvent.getAllPlayers(); break;
-				case TEAM: chatColor = ChatColor.GRAY; recipients = ApocTeam.getPlayerTeam(player).getPlayers(); break;
+				case TEAM: chatColor = ChatColor.GRAY; recipients = aEvent.getPlayerTeam(player).getPlayers(); break;
 			}
 			event.setCancelled(true);
 			for (OfflinePlayer recipient : recipients) {
@@ -53,6 +54,20 @@ public class ApocListener implements Listener {
 				&& event.getBlockAgainst().getType() == Material.CHEST
 				&& event.getBlockPlaced().getType() == Material.WALL_SIGN) {
 			event.setCancelled(!ConfigOption.PLAYERS_CAN_PLACE_SIGNS_ON_CHESTS);
+		}
+	}
+	
+	@EventHandler
+	private void onJoin(PlayerJoinEvent event) {
+		if (aEvent.getAllPlayers().contains(event.getPlayer())) {
+			Player player = event.getPlayer();
+			ApocTeam team = aEvent.getPlayerTeam(player);
+			if (team != null) {
+				if (!team.getScoreboardTeam().hasEntry(player.getName())) {
+					team.getScoreboardTeam().addEntry(player.getName());
+					aEvent.getObjective().getScore(player.getName()).setScore(team.getScore(player.getUniqueId()));
+				}
+			}
 		}
 	}
 	

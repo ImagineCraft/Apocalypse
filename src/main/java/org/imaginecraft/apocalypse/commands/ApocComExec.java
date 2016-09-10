@@ -44,11 +44,11 @@ public class ApocComExec implements CommandExecutor {
 			if (args[0].equalsIgnoreCase("addteam")) {
 				if (sender.hasPermission("apocalypse.addteam")) {
 					if (args.length > 1) {
-						ApocTeam team = ApocTeam.getTeam(args[1]);
+						ApocTeam team = event.getTeam(args[1]);
 						if (team == null) {
 							UUID leader = null;
 							if (sender instanceof Player) {
-								if (ApocTeam.getPlayerTeam((Player)sender) == null) {
+								if (event.getPlayerTeam((Player)sender) == null) {
 									leader = ((Player) sender).getUniqueId();
 								}
 								else {
@@ -120,21 +120,21 @@ public class ApocComExec implements CommandExecutor {
 							if (args.length > 1) {
 								// Player wishes to switch teams
 								if (ConfigOption.PLAYERS_CAN_SWITCH_TEAMS) {
-									ApocTeam newTeam = ApocTeam.getTeam(args[1]);
+									ApocTeam newTeam = event.getTeam(args[1]);
 									if (newTeam != null) {
 										// Make sure team is joinable
 										if (newTeam.canJoin()) {
 											if (!ConfigOption.TEAMS_ENFORCE_MAXIMUM_MEMBERS
 													|| newTeam.getSize() < ConfigOption.TEAMS_MAXIMUM_MEMBERS) {
 												newTeam.addPlayer(player.getUniqueId());
-												sender.sendMessage(ChatColor.GREEN + "You successfully joined "+ newTeam.getName() + "!");
+												sender.sendMessage(ChatColor.GREEN + "You successfully joined " + newTeam.getColor() + newTeam.getName() + ChatColor.GREEN +  "!");
 											}
 											else {
-												sender.sendMessage(ChatColor.RED + newTeam.getName() + " is already full.");
+												sender.sendMessage(newTeam.getColor() + newTeam.getName() + ChatColor.RED + " is already full.");
 											}
 										}
 										else {
-											sender.sendMessage(ChatColor.RED + "Team '" + args[1] + "' isn't joinable.");
+											sender.sendMessage(newTeam.getColor() + newTeam.getName() + ChatColor.RED + "' isn't joinable.");
 										}
 									}
 									else {
@@ -154,14 +154,19 @@ public class ApocComExec implements CommandExecutor {
 							if (args.length > 1) {
 								// Player is trying to pick their team
 								if (ConfigOption.PLAYERS_CAN_PICK_TEAM) {
-									ApocTeam team = ApocTeam.getTeam(args[1]);
+									ApocTeam team = event.getTeam(args[1]);
 									if (team != null) {
 										if (team.getSize() < ConfigOption.TEAMS_MAXIMUM_MEMBERS) {
-											team.addPlayer(player.getUniqueId());
-											sender.sendMessage(ChatColor.GREEN + "You successfully joined " + team.getName() + "!");
+											if (team.canJoin()) {
+												team.addPlayer(player.getUniqueId());
+												sender.sendMessage(ChatColor.GREEN + "You successfully joined " + team.getColor() + team.getName() + ChatColor.GREEN +  "!");
+											}
+											else {
+												sender.sendMessage(team.getColor() + team.getName() + ChatColor.RED + "' isn't joinable.");
+											}
 										}
 										else {
-											sender.sendMessage(ChatColor.RED + team.getName() + " is already full.");
+											sender.sendMessage(team.getColor() + team.getName() + ChatColor.RED + " is already full.");
 										}
 									}
 									else {
@@ -175,9 +180,10 @@ public class ApocComExec implements CommandExecutor {
 							else {
 								// Player hasn't picked a team, one will be picked for them
 								ApocTeam team = event.getAvailableTeam();
-								if (team != null) {
+								if (team != null
+										&& team.canJoin()) {
 									team.addPlayer(player.getUniqueId());
-									sender.sendMessage(ChatColor.GREEN + "You successfully joined " + team.getName() + "!");
+									sender.sendMessage(ChatColor.GREEN + "You successfully joined " + team.getColor() + team.getName() + ChatColor.GREEN +  "!");
 								}
 								else {
 									sender.sendMessage(ChatColor.RED + "No available teams to join.");
@@ -202,7 +208,7 @@ public class ApocComExec implements CommandExecutor {
 				if (sender.hasPermission("apocalypse.removeteam")) {
 					// Sender can remove any team
 					if (args.length > 1) {
-						ApocTeam team = ApocTeam.getTeam(args[1]);
+						ApocTeam team = event.getTeam(args[1]);
 						if (team != null) {
 							event.removeTeam(team);
 							sender.sendMessage(ChatColor.GREEN + "Team " + team.getColor() + team.getName() + ChatColor.GREEN + "has been removed.");
@@ -219,7 +225,7 @@ public class ApocComExec implements CommandExecutor {
 						&& ConfigOption.TEAMS_LEADER_CAN_REMOVE_TEAM) {
 					// Player can only remove their own team
 					Player player = (Player) sender;
-					ApocTeam team = ApocTeam.getPlayerTeam(player);
+					ApocTeam team = event.getPlayerTeam(player);
 					if (team != null) {
 						if (team.getLeader() == player) {
 							event.removeTeam(team);
@@ -344,7 +350,20 @@ public class ApocComExec implements CommandExecutor {
 			}
 			else if (args[0].equalsIgnoreCase("start")) {
 				if (sender.hasPermission("apocalypse.start")) {
-					// TODO
+					if (event.getWorld() != null) {
+						if (!event.isActive()) {
+							event.startWarning();
+						}
+						else {
+							sender.sendMessage(ChatColor.RED + "The event is already active.");
+						}
+					}
+					else {
+						sender.sendMessage(ChatColor.RED + "You must set a world for the event.");
+					}
+				}
+				else {
+					sender.sendMessage(ChatColor.RED + "You don't have permission to start the event.");
 				}
 			}
 			else if (args[0].equalsIgnoreCase("testboss")) {
@@ -357,7 +376,7 @@ public class ApocComExec implements CommandExecutor {
 								else bossName = bossName + " " + args[i];
 							}
 							Player player = (Player) sender;
-							ApocBoss boss = ApocBoss.getBoss(bossName);
+							ApocBoss boss = event.getBoss(bossName);
 							if (boss != null) {
 								testTeam.setSpawn(player.getLocation());
 								testTeam.addPlayer(player.getUniqueId());
@@ -389,7 +408,7 @@ public class ApocComExec implements CommandExecutor {
 								else siegeName = siegeName + " " + args[i];
 							}
 							Player player = (Player) sender;
-							ApocSiege siege = ApocSiege.getSiege(siegeName);
+							ApocSiege siege = event.getSiege(siegeName);
 							if (siege != null) {
 								testTeam.setSpawn(player.getLocation());
 								testTeam.addPlayer(player.getUniqueId());

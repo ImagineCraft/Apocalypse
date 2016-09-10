@@ -12,16 +12,15 @@ import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Team;
 
 import org.imaginecraft.apocalypse.Apocalypse;
-import org.imaginecraft.apocalypse.events.ApocEvent;
 
 public class ApocTeam implements ConfigurationSerializable {
 
-	private final static Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
-	
-	private ApocEvent event = plugin.getApocConfig().getEvent();
+	private final Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
+	private Objective objective;
 	
 	private final Map<UUID, Integer> scores = new HashMap<UUID, Integer>();
 	
@@ -43,8 +42,11 @@ public class ApocTeam implements ConfigurationSerializable {
 	
 	private void addPlayer(OfflinePlayer player, int score) {
 		scores.put(player.getUniqueId(), score);
-		sbTeam.addEntry(player.getName());
-		event.getObjective().getScore(player.getName()).setScore(score);
+		if (player.getName() != null
+				&& sbTeam != null) {
+			sbTeam.addEntry(player.getName());
+			objective.getScore(player.getName()).setScore(score);
+		}
 	}
 	
 	public void addPlayer(UUID uuid, int score) {
@@ -54,7 +56,7 @@ public class ApocTeam implements ConfigurationSerializable {
 	public int addScore(UUID uuid, int amount) {
 		int score = scores.get(uuid);
 		scores.put(uuid, score + amount);
-		event.getObjective().getScore(getPlayer(uuid).getName()).setScore(score + amount);
+		objective.getScore(getPlayer(uuid).getName()).setScore(score + amount);
 		return score + amount;
 	}
 	
@@ -106,27 +108,6 @@ public class ApocTeam implements ConfigurationSerializable {
 		return town;
 	}
 	
-	public static ApocTeam getTeam(String name) {
-		if (name.startsWith("&") || name.startsWith(String.valueOf(ChatColor.COLOR_CHAR))) {
-			name = name.substring(2);
-		}
-		for (ApocTeam team : plugin.getApocConfig().getEvent().getTeams()) {
-			if (team.getName().equalsIgnoreCase(name)) {
-				return team;
-			}
-		}
-		return null;
-	}
-	
-	public static ApocTeam getPlayerTeam(OfflinePlayer player) {
-		for (ApocTeam team : plugin.getApocConfig().getEvent().getTeams()) {
-			if (team.hasPlayer(player.getUniqueId())) {
-				return team;
-			}
-		}
-		return null;
-	}
-	
 	public boolean hasPlayer(UUID uuid) {
 		return scores.containsKey(uuid);
 	}
@@ -148,8 +129,12 @@ public class ApocTeam implements ConfigurationSerializable {
 		leader = uuid;
 	}
 	
+	public void setObjective(Objective objective) {
+		this.objective = objective;
+	}
+	
 	public void setScoreboardTeam(Team team) {
-		this.sbTeam = team;
+		sbTeam = team;
 		sbTeam.setPrefix(color.toString());
 	}
 	
@@ -159,6 +144,18 @@ public class ApocTeam implements ConfigurationSerializable {
 	
 	public void setTown(Location loc) {
 		town = loc;
+	}
+	
+	public void updateScores() {
+		for (UUID uuid : scores.keySet()) {
+			OfflinePlayer player = plugin.getServer().getOfflinePlayer(uuid);
+			if (player.getName() != null
+					&& sbTeam != null
+					&& !sbTeam.hasEntry(player.getName())) {
+				sbTeam.addEntry(player.getName());
+				objective.getScore(player.getName()).setScore(scores.get(uuid));
+			}
+		}
 	}
 	
 	@SuppressWarnings("unchecked")

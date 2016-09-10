@@ -64,13 +64,6 @@ public class ApocBoss implements ConfigurationSerializable, Listener {
 		this.name = name;
 	}
 	
-	public static ApocBoss getBoss(String name) {
-		for (ApocBoss boss : plugin.getApocConfig().getBosses()) {
-			if (boss.getName().equalsIgnoreCase(name)) return boss;
-		}
-		return null;
-	}
-	
 	public String getName() {
 		return name;
 	}
@@ -199,12 +192,6 @@ public class ApocBoss implements ConfigurationSerializable, Listener {
 	public void onDeath(EntityDeathEvent event) {
 		if (entity != null
 				&& event.getEntity() == entity) {
-			if (event.getEntity().getKiller() != null) {
-				Player player = event.getEntity().getKiller();
-				if (ApocTeam.getPlayerTeam(player) != null) {
-					ApocTeam.getPlayerTeam(player).addScore(player.getUniqueId(), points);
-				}
-			}
 			if (xp > 0
 					&& event.getDroppedExp() > 0) {
 				event.setDroppedExp(xp);

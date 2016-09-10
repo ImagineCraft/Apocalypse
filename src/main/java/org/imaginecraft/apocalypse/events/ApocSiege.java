@@ -46,10 +46,13 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	private Map<Block, Biome> biomes = new HashMap<Block, Biome>();
 	private Map<EntityType, Integer> mobs = new EnumMap<EntityType, Integer>(EntityType.class);
 	private Map<LivingEntity, Integer> spawned = new HashMap<LivingEntity, Integer>();
-	private Set<ApocBoss> bosses = new HashSet<ApocBoss>();
+	
+	private List<String> bosses = new ArrayList<String>();
+	
 	private BossBar bar;
 	private Biome biome;
 	private Location dest;
+	private ApocEvent event;
 	private int husks = 0, strays = 0, witherSkellies = 0;
 	private String name;
 	private boolean storm = false, thunder = false;
@@ -59,6 +62,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	public ApocSiege(String name) {
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
 		this.name = name;
+		event = plugin.getApocConfig().getEvent();
 	}
 	
 	private BarStyle getBarStyle() {
@@ -69,11 +73,11 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 		else return BarStyle.SOLID;
 	}
 	
-	public boolean addBoss(ApocBoss boss) {
+	public boolean addBoss(String boss) {
 		return bosses.add(boss);
 	}
 	
-	public Set<ApocBoss> getBosses() {
+	public List<String> getBosses() {
 		return bosses;
 	}
 	
@@ -111,13 +115,6 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 			}
 		}
 		return (double) i / (double) spawned.size();
-	}
-
-	public static ApocSiege getSiege(String siegeName) {
-		for (ApocSiege siege : plugin.getApocConfig().getSieges()) {
-			if (siege.getName().equalsIgnoreCase(siegeName)) return siege;
-		}
-		return null;
 	}
 	
 	public void purge() {
@@ -168,10 +165,10 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	
 	public void spawn(ApocTeam team, World world) {
 		this.team = team;
-		List<Object> spawnList = new ArrayList<Object>();
+		List<String> spawnList = new ArrayList<String>();
 		for (EntityType type : mobs.keySet()) {
 			for (int i = 0; i < mobs.get(type); i ++) {
-				spawnList.add(type);
+				spawnList.add(type.toString());
 			}
 		}
 		for (int i = 0; i < husks; i ++) {
@@ -198,16 +195,17 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 		dest.getWorld().setThundering(thunder);
 	}
 	
-	private void spawnMobs(List<Object> spawnList) {
+	private void spawnMobs(List<String> spawnList) {
 		for (int i = 0; i < spawnList.size(); i ++) {
-			final Object spawn = spawnList.get(i);
+			String spawn = spawnList.get(i);
 			new BukkitRunnable() {
 				@Override
 				public void run() {
 					LivingEntity entity = null;
-					if (spawn instanceof ApocBoss) {
-						entity = ((ApocBoss)spawn).spawn(team, dest.getWorld());
-						spawned.put(entity, ((ApocBoss)spawn).getPoints());
+					ApocBoss boss = event.getBoss(name);
+					if (boss!= null) {
+						entity = boss.spawn(team, dest.getWorld());
+						spawned.put(entity, boss.getPoints());
 					}
 					else {
 						entity = tools.spawnMob(spawn.toString(), tools.findSpawnLocation(dest));
@@ -251,8 +249,8 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 				Player killer = event.getEntity().getKiller();
 				int points = spawned.get(event.getEntity());
 				
-				if (ApocTeam.getPlayerTeam(killer) != null) {
-					ApocTeam.getPlayerTeam(killer).addScore(killer.getUniqueId(), points);
+				if (plugin.getApocConfig().getEvent().getPlayerTeam(killer) != null) {
+					plugin.getApocConfig().getEvent().getPlayerTeam(killer).addScore(killer.getUniqueId(), points);
 				}
 			}
 			if (getProgress() > 0.0D) {
@@ -288,9 +286,8 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 		if (args.containsKey("thunder")) siege.setThunder((boolean) args.get("thunder"));
 		if (args.containsKey("bosses")) {
 			List<String> bossList = (List<String>) args.get("bosses");
-			for (String bossName : bossList) {
-				ApocBoss boss = ApocBoss.getBoss(bossName);
-				if (boss != null) siege.addBoss(boss);
+			for (String boss : bossList) {
+				siege.addBoss(boss);
 			}
 		}
 		if (args.containsKey("mobs")) {
@@ -309,13 +306,7 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 		if (biome != null) result.put("biome", biome.toString());
 		if (storm) result.put("storm", storm);
 		if (thunder) result.put("thunder", thunder);
-		if (!bosses.isEmpty()) {
-			List<String> bossList = new ArrayList<String>();
-			for (ApocBoss boss : bosses) {
-				bossList.add(boss.getName());
-			}
-			result.put("bosses", bossList);
-		}
+		if (!bosses.isEmpty()) result.put("bosses", bosses);
 		if (!mobs.isEmpty() || husks > 0 || strays > 0 || witherSkellies > 0) {
 			Map<String, Integer> mobMap = new LinkedHashMap<String, Integer>();
 			for (EntityType type : mobs.keySet()) {

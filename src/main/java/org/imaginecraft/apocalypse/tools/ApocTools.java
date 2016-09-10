@@ -241,6 +241,18 @@ public class ApocTools {
 	}
 	
 	/**
+	 * TODO
+	 * @param center
+	 * @param range
+	 * @return
+	 */
+	public Location getRandomLocation(Location center, double range) {
+		int x = (int) (center.getX() - (range / 2) + (random.nextDouble() * range));
+		int z = (int) (center.getZ() - (range / 2) + (random.nextDouble() * range));
+		return center.getWorld().getHighestBlockAt(x, z).getLocation();
+	}
+	
+	/**
 	 * Converts real world milliseconds into Minecraft ticks
 	 * @param millis
 	 * @return
