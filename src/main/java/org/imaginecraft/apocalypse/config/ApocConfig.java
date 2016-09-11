@@ -58,19 +58,11 @@ public class ApocConfig {
 	 */
 	public void load() {
 		for (YamlConfiguration config : configs.keySet()) {
-			// Make sure files exist, if not create them
-			if (!configs.get(config).exists()) {
-				try {
-					configs.get(config).createNewFile();
-				} catch (IOException e) {
-					// Unable to create new yml file
-					e.printStackTrace();
-				}
-			}
 			try {
+				// Make sure files exist, if not create them
+				if (!configs.get(config).exists()) configs.get(config).createNewFile();
 				config.load(configs.get(config));
 			} catch (Exception e) {
-				// Failed to load config file
 				e.printStackTrace();
 			}
 		}
@@ -88,7 +80,9 @@ public class ApocConfig {
 				e.printStackTrace();
 			}
 		}
+		// Load saved event parameters from config
 		event = (ApocEvent) eventConfig.get("event", new ApocEvent());
+		// Load saved teams from config
 		if (teamConfig.contains("teams")) {
 			for (String name : teamConfig.getConfigurationSection("teams").getKeys(false)) {
 				ApocTeam team = (ApocTeam) teamConfig.get("teams." + name);
@@ -98,35 +92,39 @@ public class ApocConfig {
 				event.addTeam(team);
 			}
 		}
-		if (siegeConfig.contains("bosses")) {
-			for (String name : siegeConfig.getConfigurationSection("bosses").getKeys(false)) {
-				ApocBoss boss = (ApocBoss) siegeConfig.get("bosses." + name);
+		// Load saved bosses from config
+		if (bossConfig.contains("bosses")) {
+			for (String name : bossConfig.getConfigurationSection("bosses").getKeys(false)) {
+				ApocBoss boss = (ApocBoss) bossConfig.get("bosses." + name);
 				event.addBoss(boss);
 			}
 		}
+		// Add pre-loaded bosses
 		if (ConfigOption.SIEGES_LOAD_PRELOADED_BOSSES) {
 			for (ApocBoss boss : tools.getClasses(ApocBoss.class)) {
 				if (!event.getBosses().contains(boss)) event.addBoss(boss);
 			}
 		}
+		// Load saved sieges from config
 		if (siegeConfig.contains("sieges")) {
 			for (String name : siegeConfig.getConfigurationSection("sieges").getKeys(false)) {
 				ApocSiege siege = (ApocSiege) siegeConfig.get("sieges." + name);
 				event.addSiege(siege);
 			}
 		}
+		// Add pre-loaded sieges
 		if (ConfigOption.SIEGES_LOAD_PRELOADED_SIEGES) {
 			for (ApocSiege siege : tools.getClasses(ApocSiege.class)) {
 				if (!event.getSieges().contains(siege)) event.addSiege(siege);
 			}
 		}
-		// TODO
 	}
 	
 	/**
 	 * Saves configuration options, event information, and siege information from memory to file.
 	 */
 	public void save() {
+		// Clear loaded configs
 		for (YamlConfiguration config : configs.keySet()) {
 			if (config != pluginConfig) {
 				for (String name : config.getKeys(false)) {
@@ -134,19 +132,24 @@ public class ApocConfig {
 				}
 			}
 		}
+		// Save event parameters to config
 		eventConfig.set("event", event);
+		// Save teams to config
 		for (ApocTeam team : event.getTeams()) {
 			if (!team.getName().equalsIgnoreCase("Test")) teamConfig.set("teams." + team.getName(), team);
 		}
+		// Save bosses to config
 		for (ApocBoss boss : event.getBosses()) {
 			String name = boss.getName().replaceAll(" ", "_");
 			bossConfig.set("bosses." + name, boss);
 		}
+		// Save sieges to config
 		for (ApocSiege siege : event.getSieges()) {
 			String name = siege.getName().replaceAll(" ", "_");
 			siegeConfig.set("sieges." + name, siege);
 		}
 		try {
+			// Save configs to file
 			for (YamlConfiguration config : configs.keySet()) {
 				config.save(configs.get(config));
 			}
@@ -156,6 +159,10 @@ public class ApocConfig {
 		}
 	}
 	
+	/**
+	 * TODO
+	 * @return
+	 */
 	public YamlConfiguration getConfig() {
 		return pluginConfig;
 	}
@@ -194,6 +201,12 @@ public class ApocConfig {
 	 */
 	public void setValue(String string, Object value) {
 		pluginConfig.set(string, value);
+		try {
+			Field field = fields.get(string);
+			field.set(null, value);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 }
