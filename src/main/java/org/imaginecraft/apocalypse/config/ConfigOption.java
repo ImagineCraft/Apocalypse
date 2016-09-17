@@ -27,9 +27,6 @@ public class ConfigOption {
 	@ConfigDesc(path = "players.can-place-signs-on-chests", desc = "Whether players can place signs on chests in the event world.")
 	public static boolean PLAYERS_CAN_PLACE_SIGNS_ON_CHESTS = false;
 	
-	@ConfigDesc(path = "players.can-set-town", desc = "Whether players can set the town for their team.")
-	public static boolean PLAYERS_CAN_SET_TOWN = false;
-	
 	@ConfigDesc(path = "players.can-switch-teams", desc = "Whether players can switch teams before the event starts.")
 	public static boolean PLAYERS_CAN_SWITCH_TEAMS = false;
 
@@ -93,6 +90,9 @@ public class ConfigOption {
 	@ConfigDesc(path = "players.points-per-kill.zombie", desc = "Amount of points player will earn per zombie kill.")
 	public static int PLAYERS_POINTS_PER_KILL_ZOMBIE = 5;
 
+	@ConfigDesc(path = "plugin.confirm-timer", desc = "Amount of time in milliseconds a command sender has to confirm certain commands.")
+	public static long PLUGIN_CONFIRM_TIMER = 10000L;
+
 	@ConfigDesc(path = "plugin.use-reflection", desc = "Whether reflection methods should be used. Reflection is slower but should always be forwards compatible.")
 	public static boolean PLUGIN_USE_REFLECTION = false;
 
@@ -108,11 +108,23 @@ public class ConfigOption {
 	@ConfigDesc(path = "sieges.spawn-interval", desc = "Amount of time in milliseconds to wait between each mob being spawned in a siege.")
 	public static long SIEGES_SPAWN_INTERVAL = 500L;
 
-	@ConfigDesc(path = "sieges.start-time", desc = "When sieges should start. Uses the same time value that /settime uses.")
-	public static long SIEGES_START_TIME = 18000L;
+	@ConfigDesc(path = "sieges.end-time", desc = "When sieges should end. Uses the same time value that '/time set' uses. Expected range is 0 - 23999.")
+	public static short SIEGES_END_TIME = 0;
+
+	@ConfigDesc(path = "sieges.start-time", desc = "When sieges should start. Uses the same time value that '/time set' uses. Expected range is 0 - 23999.")
+	public static short SIEGES_START_TIME = 13000;
+
+	@ConfigDesc(path = "teams.can-add-late", desc = "Whether teams can be added after the event starts.")
+	public static boolean TEAMS_CAN_ADD_LATE = false;
 
 	@ConfigDesc(path = "teams.enforce-maximum-members", desc = "Whether teams can only support up to the number of players specified by teams.maximum-members.")
 	public static boolean TEAMS_ENFORCE_MAXIMUM_MEMBERS = false;
+	
+	@ConfigDesc(path = "teams.leader-can-change-leader", desc = "Whether team's leader can assign someone else to be their team's leader.")
+	public static boolean TEAMS_LEADER_CAN_CHANGE_LEADER = true;
+	
+	@ConfigDesc(path = "teams.leader-can-change-town", desc = "Whether team's leader can change their team's town location.")
+	public static boolean TEAMS_LEADER_CAN_CHANGE_TOWN = true;
 	
 	@ConfigDesc(path = "teams.leader-can-remove-team", desc = "Whether team's leader can remove their team from the event.")
 	public static boolean TEAMS_LEADER_CAN_REMOVE_TEAM = true;
@@ -123,7 +135,7 @@ public class ConfigOption {
 	@ConfigDesc(path = "teams.maximum-members", desc = "Maximum number of players that can be on a given team.")
 	public static int TEAMS_MAXIMUM_MEMBERS = 10;
 	
-	@ConfigDesc(path = "teams.maximum-spawning-distance", desc = "Maximum distance teams can spawn from the event world's world border center. If the world border is closer, it will be used instead.")
+	@ConfigDesc(path = "teams.maximum-spawning-distance", desc = "Maximum distance teams can spawn from the event world's border center. If the world border is closer, it will be used instead.")
 	public static double TEAMS_MAXIMUM_SPAWNING_DISTANCE = 5000.0D;
 	
 	@ConfigDesc(path = "teams.minimum-spawning-distance", desc = "Minimum distance teams can spawn from each other when event starts.")

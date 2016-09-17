@@ -40,7 +40,8 @@ import org.imaginecraft.apocalypse.tools.ApocTools;
 
 public class ApocBoss implements ConfigurationSerializable, Listener {
 	
-	private final static Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
+	private final Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
+	private final ApocTools tools = plugin.getApocTools();
 	
 	private Map<EquipmentSlot, ItemStack> equipment = new EnumMap<EquipmentSlot, ItemStack>(EquipmentSlot.class);
 	private Map<DamageCause, Double> resistances = new EnumMap<DamageCause, Double>(DamageCause.class);
@@ -56,8 +57,6 @@ public class ApocBoss implements ConfigurationSerializable, Listener {
 	private EntityType type;
 	private SkeletonType sType = SkeletonType.NORMAL;
 	private Villager.Profession zType = Villager.Profession.NORMAL;
-	
-	private final ApocTools tools = plugin.getApocTools();
 	
 	public ApocBoss(String name) {
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);

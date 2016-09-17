@@ -48,7 +48,7 @@ public class ApocEvent implements ConfigurationSerializable {
 
 	private final Random random = new Random();
 	
-	private boolean active = false;
+	private boolean active = false, started = false;
 	private long duration = 0L, endTime = 0L, warningTime = 0L;
 	private int warnings = 0;
 	private Scoreboard scoreboard;
@@ -85,6 +85,7 @@ public class ApocEvent implements ConfigurationSerializable {
 		teams.add(team);
 	}
 	
+	// Assigns each team an initial spawn point
 	private void createSpawns() {
 		double min = ConfigOption.TEAMS_MINIMUM_SPAWNING_DISTANCE,
 				range = Math.min(ConfigOption.TEAMS_MAXIMUM_SPAWNING_DISTANCE, world.getWorldBorder().getSize());
@@ -158,7 +159,7 @@ public class ApocEvent implements ConfigurationSerializable {
 		return newTeam;
 	}
 	
-	// Find a team color that isn't in use yet.
+	// Find a team color that isn't in use yet
 	private ChatColor getAvailableTeamColor() {
 		int index = random.nextInt(colors.size());
 		Iterator<ChatColor> iter = colors.iterator();
@@ -296,6 +297,14 @@ public class ApocEvent implements ConfigurationSerializable {
 	 * TODO
 	 * @return
 	 */
+	public boolean hasStarted() {
+		return started;
+	}
+	
+	/**
+	 * TODO
+	 * @return
+	 */
 	public boolean isActive() {
 		return active;
 	}
@@ -311,13 +320,6 @@ public class ApocEvent implements ConfigurationSerializable {
 		team.remove();
 		colors.add(team.getColor());
 		teams.remove(team);
-	}
-	
-	/**
-	 * TODO
-	 */
-	public void setActive(boolean active) {
-		this.active = active;
 	}
 	
 	/**
@@ -344,6 +346,13 @@ public class ApocEvent implements ConfigurationSerializable {
 	
 	/**
 	 * TODO
+	 */
+	public void setStarted(boolean started) {
+		this.started = started;
+	}
+	
+	/**
+	 * TODO
 	 * @param world
 	 */
 	public void setWorld(World world) {
@@ -353,6 +362,7 @@ public class ApocEvent implements ConfigurationSerializable {
 	// Start the event after warnings have finished
 	private void startEvent() {
 		active = true;
+		started = true;
 		duration = ConfigOption.EVENT_DURATION;
 		endTime = System.currentTimeMillis() + duration;
 		createSpawns();
@@ -378,19 +388,20 @@ public class ApocEvent implements ConfigurationSerializable {
 			double dbl2 = dbl1 * (double)warningTime;
 			long wTime = (long) dbl2;
 			new BukkitRunnable() {
+				@SuppressWarnings("deprecation")
 				@Override
 				public void run() {
 					if (wTime > 0L) {
 						for (OfflinePlayer player : getAllPlayers()) {
 							if (player.isOnline()) {
-								((Player) player).sendMessage(ChatColor.GOLD + "The Apocalypse will begin in " + tools.getTime(wTime) + ".");
+								((Player) player).sendTitle(null, ChatColor.GOLD + "The Apocalypse will begin in " + tools.getTime(wTime) + ".");
 							}
 						}
 					}
 					else {
 						for (OfflinePlayer player : getAllPlayers()) {
 							if (player.isOnline()) {
-								((Player) player).sendMessage(ChatColor.GOLD + "The Apocalypse has begun!");
+								((Player) player).sendTitle(ChatColor.GOLD + "The Apocalypse has begun!", null);
 							}
 						}
 						startEvent();
@@ -402,7 +413,7 @@ public class ApocEvent implements ConfigurationSerializable {
 	
 	public static ApocEvent deserialize(Map<String, Object> args) {
 		ApocEvent event = new ApocEvent();
-		event.setActive((boolean) args.get("active"));
+		event.setStarted((boolean) args.get("started"));
 		event.setEndTime((int)args.get("end-time"));
 		if (args.containsKey("world")) event.setWorld(Bukkit.getServer().getWorld(UUID.fromString((String) args.get("world"))));
 		return event;
@@ -411,7 +422,7 @@ public class ApocEvent implements ConfigurationSerializable {
 	@Override
 	public Map<String, Object> serialize() {
 		Map<String, Object> result = new LinkedHashMap<String, Object>();
-		result.put("active", active);
+		result.put("started", started);
 		result.put("end-time", endTime);
 		if (world != null) result.put("world", world.getUID().toString());
 		return result;

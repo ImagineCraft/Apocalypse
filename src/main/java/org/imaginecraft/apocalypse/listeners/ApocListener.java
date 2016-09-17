@@ -23,7 +23,7 @@ import org.imaginecraft.apocalypse.teams.ApocTeam;
 public class ApocListener implements Listener {
 	
 	private final Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
-	private final ApocEvent aEvent = plugin.getApocConfig().getEvent();
+	private ApocEvent aEvent = plugin.getApocConfig().getEvent();
 
 	@EventHandler(ignoreCancelled = true)
 	private void onChat(AsyncPlayerChatEvent event) {

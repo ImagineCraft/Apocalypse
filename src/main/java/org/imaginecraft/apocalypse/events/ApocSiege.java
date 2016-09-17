@@ -41,7 +41,8 @@ import org.imaginecraft.apocalypse.tools.ApocTools;
 
 public class ApocSiege implements ConfigurationSerializable, Listener {
 	
-	private final static Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
+	private final Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
+	private final ApocTools tools = plugin.getApocTools();
 
 	private Map<Block, Biome> biomes = new HashMap<Block, Biome>();
 	private Map<EntityType, Integer> mobs = new EnumMap<EntityType, Integer>(EntityType.class);
@@ -57,7 +58,6 @@ public class ApocSiege implements ConfigurationSerializable, Listener {
 	private String name;
 	private boolean storm = false, thunder = false;
 	private ApocTeam team;
-	private final ApocTools tools = plugin.getApocTools();
 	
 	public ApocSiege(String name) {
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);

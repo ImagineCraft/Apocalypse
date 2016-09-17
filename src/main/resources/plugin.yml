@@ -37,6 +37,9 @@ permissions:
     apocalypse.removeteam:
         description: Allows user to remove teams from the event.
         default: false
+    apocalypse.setleader:
+        description: Allows user to change a given team's leader.
+        default: false
     apocalypse.setoption:
         description: Allows user to view and modify plugin configuration options.
         default: false

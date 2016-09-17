@@ -20,7 +20,6 @@ import org.imaginecraft.apocalypse.Apocalypse;
 public class ApocTeam implements ConfigurationSerializable {
 
 	private final Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
-	private Objective objective;
 	
 	private final Map<UUID, Integer> scores = new HashMap<UUID, Integer>();
 	
@@ -28,6 +27,7 @@ public class ApocTeam implements ConfigurationSerializable {
 	private ChatColor color;
 	private UUID leader = null;
 	private final String name;
+	private Objective objective;
 	private Team sbTeam;
 	private Location spawn, town;
 	
@@ -115,6 +115,14 @@ public class ApocTeam implements ConfigurationSerializable {
 	public void remove() {
 		sbTeam.unregister();
 		scores.clear();
+	}
+	
+	public void removePlayer(OfflinePlayer player) {
+		scores.remove(player.getUniqueId());
+		if (player.getName() != null
+				&& sbTeam != null) {
+			sbTeam.removeEntry(player.getName());
+		}
 	}
 	
 	public void setCanJoin(boolean canJoin) {

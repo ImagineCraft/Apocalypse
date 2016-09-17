@@ -1,7 +1,9 @@
 package org.imaginecraft.apocalypse.commands;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.ChatColor;
@@ -20,6 +22,7 @@ import org.imaginecraft.apocalypse.events.ApocChatType;
 import org.imaginecraft.apocalypse.events.ApocEvent;
 import org.imaginecraft.apocalypse.events.ApocSiege;
 import org.imaginecraft.apocalypse.teams.ApocTeam;
+import org.imaginecraft.apocalypse.tools.ApocTools;
 
 import com.google.common.collect.Lists;
 
@@ -31,7 +34,11 @@ public class ApocComExec implements CommandExecutor {
 	private final Apocalypse plugin = JavaPlugin.getPlugin(Apocalypse.class);
 	private final ApocConfig config = plugin.getApocConfig();
 	private ApocEvent event = config.getEvent();
-	private ApocTeam testTeam = new ApocTeam(ChatColor.GRAY, "Test");
+	private ApocTools tools = plugin.getApocTools();
+	
+	private Map<UUID, Long> confirmLeave = new HashMap<UUID, Long>();
+	
+	private final ApocTeam testTeam = new ApocTeam(ChatColor.GRAY, "Test");
 	
 	public ApocComExec() {
 		testTeam.setCanJoin(false);
@@ -43,32 +50,37 @@ public class ApocComExec implements CommandExecutor {
 		if (args.length > 0) {
 			if (args[0].equalsIgnoreCase("addteam")) {
 				if (sender.hasPermission("apocalypse.addteam")) {
-					if (args.length > 1) {
-						ApocTeam team = event.getTeam(args[1]);
-						if (team == null) {
-							UUID leader = null;
-							if (sender instanceof Player) {
-								if (event.getPlayerTeam((Player)sender) == null) {
-									leader = ((Player) sender).getUniqueId();
+					if (!event.hasStarted() || ConfigOption.TEAMS_CAN_ADD_LATE) {
+						if (args.length > 1) {
+							ApocTeam team = event.getTeam(args[1]);
+							if (team == null) {
+								UUID leader = null;
+								if (sender instanceof Player) {
+									if (event.getPlayerTeam((Player)sender) == null) {
+										leader = ((Player) sender).getUniqueId();
+									}
+									else {
+										sender.sendMessage(ChatColor.RED + "You must leave your current team before making a new one.");
+										return true;
+									}
 								}
-								else {
-									sender.sendMessage(ChatColor.RED + "You must leave your current team before making a new one.");
-									return true;
+								team = event.createTeam(args[1]);
+								if (leader != null) {
+									team.addPlayer(leader);
+									team.setLeader(leader);
 								}
+								sender.sendMessage(ChatColor.GREEN + "Successfully created team " + team.getColor() + team.getName() + ChatColor.GREEN + "!");
 							}
-							team = event.createTeam(args[1]);
-							if (leader != null) {
-								team.addPlayer(leader);
-								team.setLeader(leader);
+							else {
+								sender.sendMessage(ChatColor.RED + "Team " + team.getColor() + team.getName() + ChatColor.RED + " already exists.");
 							}
-							sender.sendMessage(ChatColor.GREEN + "Successfully created team " + team.getColor() + team.getName() + ChatColor.GREEN + "!");
 						}
 						else {
-							sender.sendMessage(ChatColor.RED + "Team " + team.getColor() + team.getName() + ChatColor.RED + " already exists.");
+							sender.sendMessage(ChatColor.RED + "You must specify the name of the new team.");
 						}
 					}
 					else {
-						sender.sendMessage(ChatColor.RED + "You must specify the name of the new team.");
+						sender.sendMessage(ChatColor.RED + "You can't add teams after the event has begun.");
 					}
 				}
 				else {
@@ -111,84 +123,109 @@ public class ApocComExec implements CommandExecutor {
 					sender.sendMessage(ChatColor.RED + "This command is only accessible to players.");
 				}
 			}
+			else if (args[0].equalsIgnoreCase("confirm")) {
+				if (sender instanceof Player) {
+					Player player = (Player) sender;
+					if (confirmLeave.containsKey(player.getUniqueId())
+							&& System.currentTimeMillis() <= confirmLeave.get(player.getUniqueId())) {
+						ApocTeam team = event.getPlayerTeam(player);
+						if (team != null) {
+							if (team.getLeader() != player
+									|| team.getSize() == 1) {
+								team.removePlayer(player);
+								sender.sendMessage(ChatColor.GREEN + "You have left the event.");
+								if (team.getSize() == 0) team.remove();
+							}
+							else {
+								sender.sendMessage(ChatColor.RED + "You must assign a new leader to your team before you can leave.");
+							}
+						}
+					}
+				}
+			}
 			else if (args[0].equalsIgnoreCase("join")) {
 				if (sender instanceof Player) {
 					if (sender.hasPermission("apocalypse.join")) {
-						Player player = (Player) sender;
-						if (event.getAllPlayers().contains(player)) {
-							// Player has already joined event
-							if (args.length > 1) {
-								// Player wishes to switch teams
-								if (ConfigOption.PLAYERS_CAN_SWITCH_TEAMS) {
-									ApocTeam newTeam = event.getTeam(args[1]);
-									if (newTeam != null) {
-										// Make sure team is joinable
-										if (newTeam.canJoin()) {
-											if (!ConfigOption.TEAMS_ENFORCE_MAXIMUM_MEMBERS
-													|| newTeam.getSize() < ConfigOption.TEAMS_MAXIMUM_MEMBERS) {
-												newTeam.addPlayer(player.getUniqueId());
-												sender.sendMessage(ChatColor.GREEN + "You successfully joined " + newTeam.getColor() + newTeam.getName() + ChatColor.GREEN +  "!");
+						if (!event.hasStarted() || ConfigOption.PLAYERS_CAN_JOIN_LATE) {
+							Player player = (Player) sender;
+							if (event.getAllPlayers().contains(player)) {
+								// Player has already joined event
+								if (args.length > 1) {
+									// Player wishes to switch teams
+									if (ConfigOption.PLAYERS_CAN_SWITCH_TEAMS) {
+										ApocTeam newTeam = event.getTeam(args[1]);
+										if (newTeam != null) {
+											// Make sure team is joinable
+											if (newTeam.canJoin()) {
+												if (!ConfigOption.TEAMS_ENFORCE_MAXIMUM_MEMBERS
+														|| newTeam.getSize() < ConfigOption.TEAMS_MAXIMUM_MEMBERS) {
+													newTeam.addPlayer(player.getUniqueId());
+													sender.sendMessage(ChatColor.GREEN + "You successfully joined " + newTeam.getColor() + newTeam.getName() + ChatColor.GREEN +  "!");
+												}
+												else {
+													sender.sendMessage(newTeam.getColor() + newTeam.getName() + ChatColor.RED + " is already full.");
+												}
 											}
 											else {
-												sender.sendMessage(newTeam.getColor() + newTeam.getName() + ChatColor.RED + " is already full.");
+												sender.sendMessage(newTeam.getColor() + newTeam.getName() + ChatColor.RED + "' isn't joinable.");
 											}
 										}
 										else {
-											sender.sendMessage(newTeam.getColor() + newTeam.getName() + ChatColor.RED + "' isn't joinable.");
+											sender.sendMessage(ChatColor.RED + "Team '" + args[1] + "' doesn't exist.");
 										}
 									}
 									else {
-										sender.sendMessage(ChatColor.RED + "Team '" + args[1] + "' doesn't exist.");
+										sender.sendMessage(ChatColor.RED + "You can't switch teams.");
 									}
 								}
 								else {
-									sender.sendMessage(ChatColor.RED + "You can't switch teams.");
+									sender.sendMessage(ChatColor.RED + "You have already joined this event.");
 								}
 							}
 							else {
-								sender.sendMessage(ChatColor.RED + "You have already joined this event.");
+								// Player hasn't joined the event yet
+								if (args.length > 1) {
+									// Player is trying to pick their team
+									if (ConfigOption.PLAYERS_CAN_PICK_TEAM) {
+										ApocTeam team = event.getTeam(args[1]);
+										if (team != null) {
+											if (team.getSize() < ConfigOption.TEAMS_MAXIMUM_MEMBERS) {
+												if (team.canJoin()) {
+													team.addPlayer(player.getUniqueId());
+													sender.sendMessage(ChatColor.GREEN + "You successfully joined " + team.getColor() + team.getName() + ChatColor.GREEN +  "!");
+												}
+												else {
+													sender.sendMessage(team.getColor() + team.getName() + ChatColor.RED + "' isn't joinable.");
+												}
+											}
+											else {
+												sender.sendMessage(team.getColor() + team.getName() + ChatColor.RED + " is already full.");
+											}
+										}
+										else {
+											sender.sendMessage(ChatColor.RED + "Team '" + args[1] + "' doesn't exist.");
+										}
+									}
+									else {
+										sender.sendMessage(ChatColor.RED + "You can't pick your team.");
+									}
+								}
+								else {
+									// Player hasn't picked a team, one will be picked for them
+									ApocTeam team = event.getAvailableTeam();
+									if (team != null
+											&& team.canJoin()) {
+										team.addPlayer(player.getUniqueId());
+										sender.sendMessage(ChatColor.GREEN + "You successfully joined " + team.getColor() + team.getName() + ChatColor.GREEN +  "!");
+									}
+									else {
+										sender.sendMessage(ChatColor.RED + "No available teams to join.");
+									}
+								}
 							}
 						}
 						else {
-							// Player hasn't joined the event yet
-							if (args.length > 1) {
-								// Player is trying to pick their team
-								if (ConfigOption.PLAYERS_CAN_PICK_TEAM) {
-									ApocTeam team = event.getTeam(args[1]);
-									if (team != null) {
-										if (team.getSize() < ConfigOption.TEAMS_MAXIMUM_MEMBERS) {
-											if (team.canJoin()) {
-												team.addPlayer(player.getUniqueId());
-												sender.sendMessage(ChatColor.GREEN + "You successfully joined " + team.getColor() + team.getName() + ChatColor.GREEN +  "!");
-											}
-											else {
-												sender.sendMessage(team.getColor() + team.getName() + ChatColor.RED + "' isn't joinable.");
-											}
-										}
-										else {
-											sender.sendMessage(team.getColor() + team.getName() + ChatColor.RED + " is already full.");
-										}
-									}
-									else {
-										sender.sendMessage(ChatColor.RED + "Team '" + args[1] + "' doesn't exist.");
-									}
-								}
-								else {
-									sender.sendMessage(ChatColor.RED + "You can't pick your team.");
-								}
-							}
-							else {
-								// Player hasn't picked a team, one will be picked for them
-								ApocTeam team = event.getAvailableTeam();
-								if (team != null
-										&& team.canJoin()) {
-									team.addPlayer(player.getUniqueId());
-									sender.sendMessage(ChatColor.GREEN + "You successfully joined " + team.getColor() + team.getName() + ChatColor.GREEN +  "!");
-								}
-								else {
-									sender.sendMessage(ChatColor.RED + "No available teams to join.");
-								}
-							}
+							sender.sendMessage(ChatColor.RED + "You can't join an event after it has started.");
 						}
 					}
 					else {
@@ -200,8 +237,26 @@ public class ApocComExec implements CommandExecutor {
 				}
 			}
 			else if (args[0].equalsIgnoreCase("leave")) {
-				if (sender.hasPermission("apocalypse.leave")) {
-					// TODO
+				if (sender instanceof Player) {
+					Player player = (Player) sender;
+					if (sender.hasPermission("apocalypse.leave")) {
+						if (event.getAllPlayers().contains(sender)) {
+							confirmLeave.put(player.getUniqueId(), System.currentTimeMillis() + ConfigOption.PLUGIN_CONFIRM_TIMER);
+							sender.sendMessage(ChatColor.YELLOW + "Are you sure you wish to leave the event?");
+							if (ConfigOption.PLAYERS_CAN_JOIN_LATE) sender.sendMessage(ChatColor.YELLOW + "Once you leave you will be unable to rejoin.");
+							sender.sendMessage(ChatColor.YELLOW + "To confirm leaving the event, type " + ChatColor.GREEN + "/apoc confirm" + ChatColor.YELLOW
+									+ " in the next " + tools.getTime(ConfigOption.PLUGIN_CONFIRM_TIMER));
+						}
+						else {
+							sender.sendMessage(ChatColor.RED + "You haven't joined the event.");
+						}
+					}
+					else {
+						sender.sendMessage(ChatColor.RED + "You do not have permission to leave an Apocalypse event.");
+					}
+				}
+				else {
+					sender.sendMessage(ChatColor.RED + "This command is only accessible to players.");
 				}
 			}
 			else if (args[0].equalsIgnoreCase("removeteam")) {
@@ -257,27 +312,14 @@ public class ApocComExec implements CommandExecutor {
 								if (value instanceof Boolean) {
 									newValue = Boolean.parseBoolean(args[2]);
 								}
-								else if (value instanceof Double) {
+								else {
 									try {
-										newValue = Double.parseDouble(args[2]);
+										if (value instanceof Double) newValue = Double.parseDouble(args[2]);
+										else if (value instanceof Integer) newValue = Integer.parseInt(args[2]);
+										else if (value instanceof Long) newValue = Long.parseLong(args[2]);
+										else if (value instanceof Short) newValue = Short.parseShort(args[2]);
 									} catch (NumberFormatException e) {
 										sender.sendMessage(ChatColor.RED + "This option must be set to a number.");
-										return true;
-									}
-								}
-								else if (value instanceof Integer) {
-									try {
-										newValue = Integer.parseInt(args[2]);
-									} catch (NumberFormatException e) {
-										sender.sendMessage(ChatColor.RED + "This option must be set to a whole number.");
-										return true;
-									}
-								}
-								else if (value instanceof Long) {
-									try {
-										newValue = Long.parseLong(args[2]);
-									} catch (NumberFormatException e) {
-										sender.sendMessage(ChatColor.RED + "This option must be set to a whole number.");
 										return true;
 									}
 								}
@@ -351,7 +393,7 @@ public class ApocComExec implements CommandExecutor {
 			else if (args[0].equalsIgnoreCase("start")) {
 				if (sender.hasPermission("apocalypse.start")) {
 					if (event.getWorld() != null) {
-						if (!event.isActive()) {
+						if (!event.hasStarted()) {
 							event.startWarning();
 						}
 						else {
